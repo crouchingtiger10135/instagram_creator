@@ -172,6 +172,3 @@
         });
     </script>
 </x-app-layout>
-        });
-    </script>
-</x-app-layout>
