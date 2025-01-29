@@ -30,7 +30,8 @@ class ImageController extends Controller
         ]);
 
         // store() returns something like "public/photos/xyz.jpg"
-        $path = $request->file('photo')->store('public/photos');
+        $path = $request->file('photo')->store('photos', 'public');
+
 
         // place new image at the end => position = max + 1
         $maxPosition = Image::where('user_id', auth()->id())->max('position') ?? 0;
