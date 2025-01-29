@@ -65,3 +65,44 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # instagram-builder-app
+
+# Laravel Image Upload Application
+
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Usage](#usage)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Overview
+
+This Laravel application allows users to upload, manage, and display images. It utilizes **Laravel Breeze** for authentication, **Tailwind CSS** for styling, and is deployed using **Laravel Forge**. Users can upload images, add captions, reorder them via drag-and-drop, and perform edit or delete operations.
+
+## Features
+
+- **User Authentication:** Secure login and registration using Laravel Breeze.
+- **Image Upload:** Users can upload images with captions.
+- **Image Management:** Edit captions, replace images, delete images.
+- **Drag-and-Drop Reordering:** Rearrange images in a 3-column grid.
+- **Responsive Design:** Mobile-friendly interface using Tailwind CSS.
+- **Deployment:** Automated deployment scripts for Laravel Forge.
+
+## Prerequisites
+
+- **Server Requirements:**
+  - PHP >= 8.0
+  - Composer
+  - Node.js & NPM
+  - A web server (Nginx or Apache)
+  - Laravel Forge account for deployment
+
+- **Local Development:**
+  - PHP, Composer, Node.js, and NPM installed locally.
+  - A database (e.g., MySQL, PostgreSQL).
+
