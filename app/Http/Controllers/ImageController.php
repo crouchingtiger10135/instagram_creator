@@ -26,7 +26,7 @@ class ImageController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|max:2048',
+            'photo' => 'required|image|max:10000',
         ]);
 
         // store() returns something like "public/photos/xyz.jpg"
@@ -98,7 +98,7 @@ class ImageController extends Controller
         // Validate: caption is optional, file is optional
         $request->validate([
             'caption' => 'nullable|string|max:255',
-            'new_photo' => 'nullable|image|max:2048',
+            'new_photo' => 'nullable|image|max:10000',
         ]);
 
         // If user uploaded a new file
