@@ -59,7 +59,7 @@
                 </form>
             </div>
 
-            {{-- 2) IMAGE GRID (Instagram-style, Full-Width, No Padding) --}}
+            {{-- 2) IMAGE GRID (Responsive, No Padding, Full-Width) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 <h3 class="text-lg font-semibold mb-4 px-6">
                     Your Images (Drag to Reorder)
@@ -68,10 +68,10 @@
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
-                    <!-- Instagram-style grid: No gaps, full width -->
+                    <!-- Responsive Instagram-style grid -->
                     <div 
                         id="image-grid"
-                        class="grid grid-cols-3 gap-0 w-screen mx-auto"
+                        class="grid grid-cols-2 md:grid-cols-3 gap-0 w-full mx-auto"
                     >
                         @foreach($images as $image)
                             <a 
@@ -98,7 +98,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const grid = document.getElementById('image-grid');
             
-            // Initialize SortableJS on the 3-col grid
+            // Initialize SortableJS on the grid
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
