@@ -1,4 +1,4 @@
-{{-- resources/views/dashboard.blade.php --}}
+<!-- resources/views/dashboard.blade.php -->
 
 <x-app-layout>
     {{-- PAGE HEADER --}}
