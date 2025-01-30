@@ -4,13 +4,13 @@
     {{-- PAGE HEADER --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Your Feed') }}
+            {{ __('Your Dashboard') }}
         </h2>
     </x-slot>
 
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
             @if (session('success'))
@@ -59,7 +59,7 @@
                 </form>
             </div>
 
-            {{-- 2) IMAGE GRID (Responsive, No Padding, Full-Width) --}}
+            {{-- 2) IMAGE GRID (Always 3x3 Layout) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 <h3 class="text-lg font-semibold mb-4 px-6">
                     Your Images (Drag to Reorder)
@@ -68,12 +68,12 @@
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
-                    <!-- Responsive Instagram-style grid -->
+                    <!-- Always 3x3 Grid (Max 9 images) -->
                     <div 
                         id="image-grid"
-                        class="grid grid-cols-2 md:grid-cols-3 gap-0 w-full mx-auto"
+                        class="grid grid-cols-3 gap-0 w-full mx-auto"
                     >
-                        @foreach($images as $image)
+                        @foreach($images->take(9) as $image) {{-- Only show 9 images --}}
                             <a 
                                 href="{{ route('dashboard.images.edit', $image->id) }}" 
                                 class="border-none"
