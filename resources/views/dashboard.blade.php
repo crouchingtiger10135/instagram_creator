@@ -49,6 +49,13 @@
                                 class="relative"
                                 data-id="{{ $image->id }}"
                             >
+                                {{-- Drag Handle --}}
+                                <div class="absolute top-2 right-2 z-10 cursor-move drag-handle">
+                                    <!-- Drag Icon (e.g., grip lines) -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M6 10a2 2 0 114 0 2 2 0 01-4 0zm4 4a2 2 0 110-4 2 2 0 010 4zm0-8a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
                                 <a 
                                     href="{{ route('dashboard.images.edit', $image->id) }}" 
                                     class="block"
@@ -131,14 +138,6 @@
         </div>
     </div>
 
-    {{-- Loading Spinner (Optional) --}}
-    <div id="loading-spinner" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-        </svg>
-    </div>
-
     {{-- SORTABLEJS (CDN) --}}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
@@ -147,7 +146,6 @@
             const addButton = document.getElementById('add-image-button');
             const modal = document.getElementById('add-image-modal');
             const closeModal = document.getElementById('close-modal');
-            const loadingSpinner = document.getElementById('loading-spinner');
 
             // Function to open modal
             addButton.addEventListener('click', () => {
@@ -181,20 +179,11 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
-                // Removed 'handle: img' to allow dragging from anywhere
-                // handle: 'img', 
+                handle: '.drag-handle', // Make the drag handle the designated element
                 delay: 100, // Reduced delay for quicker response
                 delayOnTouchOnly: true, // Apply delay only on touch devices
                 touchStartThreshold: 15, // Increased threshold to prevent accidental drags
-                onStart: function () {
-                    grid.classList.add('dragging');
-                },
                 onEnd: function () {
-                    grid.classList.remove('dragging');
-                    
-                    // Show loading spinner
-                    loadingSpinner.classList.remove('hidden');
-
                     // After dragging ends, build a list of IDs in new order
                     let orderedIds = [];
                     grid.querySelectorAll('[data-id]').forEach((item) => {
@@ -214,36 +203,18 @@
                     .then(data => {
                         if (data.status === 'success') {
                             console.log('Order updated!');
-                            showToast('Order updated successfully!', 'success');
+                            // Optionally, you can refresh the page or give some indication
                         } else {
                             console.error('Failed to update order:', data);
-                            showToast('Failed to update order. Please try again.', 'error');
+                            // Optionally, handle the error (e.g., show an alert)
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showToast('An error occurred. Please try again.', 'error');
-                    })
-                    .finally(() => {
-                        // Hide loading spinner
-                        loadingSpinner.classList.add('hidden');
+                        // Optionally, handle the error (e.g., show an alert)
                     });
                 }
             });
-
-            // Function to show toast notifications
-            function showToast(message, type) {
-                const toast = document.createElement('div');
-                toast.className = `fixed bottom-5 right-5 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} transition-opacity duration-300`;
-                toast.textContent = message;
-                document.body.appendChild(toast);
-                setTimeout(() => {
-                    toast.classList.add('opacity-0');
-                    setTimeout(() => {
-                        toast.remove();
-                    }, 300);
-                }, 3000);
-            }
         });
     </script>
 </x-app-layout>
