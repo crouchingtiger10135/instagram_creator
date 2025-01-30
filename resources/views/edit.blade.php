@@ -67,26 +67,58 @@
                     </div>
 
                     {{-- Submit button --}}
+                    <div class="flex items-center justify-between">
+                        <button 
+                            type="submit"
+                            class="inline-flex items-center px-4 py-2 
+                                   bg-blue-600 border border-transparent 
+                                   rounded-md font-semibold text-white 
+                                   hover:bg-blue-700 focus:outline-none 
+                                   focus:ring-2 focus:ring-blue-500 
+                                   focus:ring-offset-2 transition 
+                                   ease-in-out duration-150"
+                        >
+                            Save Changes
+                        </button>
+
+                        {{-- Cancel link --}}
+                        <a 
+                            href="{{ route('dashboard') }}" 
+                            class="text-sm text-gray-600 hover:underline"
+                        >
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            {{-- DELETE BUTTON (Logically Placed Below Form) --}}
+            <div class="mt-6 bg-white overflow-hidden shadow rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-red-600 mb-4">Delete Image</h3>
+                <p class="text-gray-600 mb-4">
+                    Deleting this image is permanent and cannot be undone.
+                </p>
+
+                <form 
+                    action="{{ route('dashboard.images.destroy', $image->id) }}" 
+                    method="POST"
+                    onsubmit="return confirm('Are you sure you want to delete this image? This action cannot be undone.')"
+                >
+                    @csrf
+                    @method('DELETE')
+
                     <button 
                         type="submit"
                         class="inline-flex items-center px-4 py-2 
-                               bg-blue-600 border border-transparent 
+                               bg-red-600 border border-transparent 
                                rounded-md font-semibold text-white 
-                               hover:bg-blue-700 focus:outline-none 
-                               focus:ring-2 focus:ring-blue-500 
+                               hover:bg-red-700 focus:outline-none 
+                               focus:ring-2 focus:ring-red-500 
                                focus:ring-offset-2 transition 
                                ease-in-out duration-150"
                     >
-                        Save Changes
+                        Delete Image
                     </button>
-
-                    {{-- Or link back to dashboard --}}
-                    <a 
-                        href="{{ route('dashboard') }}" 
-                        class="inline-flex items-center ml-4 text-sm text-gray-600 hover:underline"
-                    >
-                        Cancel
-                    </a>
                 </form>
             </div>
 
