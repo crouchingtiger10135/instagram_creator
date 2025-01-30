@@ -59,7 +59,7 @@
                 </form>
             </div>
 
-            {{-- 2) IMAGE GRID (3 Columns, Drag-and-Drop) --}}
+            {{-- 2) IMAGE GRID (Instagram-style) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-4">
                     Your Images (Drag to Reorder)
@@ -68,60 +68,22 @@
                 @if ($images->count() === 0)
                     <p class="text-gray-500">No images yet.</p>
                 @else
-                    <!-- 
-                      SortableJS Container:
-                      For a fixed 3-column grid, we use grid-cols-3 
-                    -->
+                    <!-- Instagram-style grid: No gaps, full width -->
                     <div 
                         id="image-grid"
-                        class="grid grid-cols-3 gap-2"
+                        class="grid grid-cols-3 gap-0 mx-0"
                     >
                         @foreach($images as $image)
-                            <div 
-                                class="border border-gray-200 rounded-md overflow-hidden relative"
-                                data-id="{{ $image->id }}"
+                            <a 
+                                href="{{ route('dashboard.images.edit', $image->id) }}" 
+                                class="border-none"
                             >
-                                <!-- Display the image -->
                                 <img 
                                     src="{{ Storage::url($image->file_path) }}" 
                                     alt="User image"
                                     class="w-full aspect-square object-cover"
                                 >
-
-                                <!-- If you have a caption -->
-                                @if($image->caption)
-                                    <div class="p-2 text-sm">
-                                        {{ $image->caption }}
-                                    </div>
-                                @endif
-
-                                <!-- EDIT & DELETE BUTTONS (top-right corner) -->
-                                <div class="absolute top-2 right-2 flex gap-2">
-                                    {{-- EDIT LINK --}}
-                                    <a 
-                                        href="{{ route('dashboard.images.edit', $image->id) }}"
-                                        class="px-2 py-1 bg-yellow-300 text-xs rounded shadow hover:bg-yellow-400"
-                                    >
-                                        Edit
-                                    </a>
-
-                                    {{-- DELETE FORM --}}
-                                    <form 
-                                        action="{{ route('dashboard.images.destroy', $image->id) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this image?')"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button 
-                                            type="submit"
-                                            class="px-2 py-1 bg-red-500 text-white text-xs rounded shadow hover:bg-red-600"
-                                        >
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
+                            </a>
                         @endforeach
                     </div>
                 @endif
@@ -143,8 +105,8 @@
                 onEnd: function () {
                     // After dragging ends, build a list of IDs in new order
                     let orderedIds = [];
-                    grid.querySelectorAll('[data-id]').forEach((item) => {
-                        orderedIds.push(item.getAttribute('data-id'));
+                    grid.querySelectorAll('a').forEach((item) => {
+                        orderedIds.push(item.getAttribute('href').split('/').pop());
                     });
 
                     // Send the new order to the server
