@@ -10,7 +10,7 @@
 
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
             @if (session('success'))
@@ -59,7 +59,7 @@
                 </form>
             </div>
 
-            {{-- 2) IMAGE GRID (Always 3x3 Layout) --}}
+            {{-- 2) IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 <h3 class="text-lg font-semibold mb-4 px-6">
                     Your Images (Drag to Reorder)
@@ -68,22 +68,27 @@
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
-                    <!-- Always 3x3 Grid (Max 9 images) -->
+                    <!-- Instagram-style grid: 3 columns, no gaps, full width -->
                     <div 
                         id="image-grid"
                         class="grid grid-cols-3 gap-0 w-full mx-auto"
                     >
-                        @foreach($images->take(9) as $image) {{-- Only show 9 images --}}
-                            <a 
-                                href="{{ route('dashboard.images.edit', $image->id) }}" 
-                                class="border-none"
+                        @foreach($images as $image)
+                            <div 
+                                class="relative"
+                                data-id="{{ $image->id }}"
                             >
-                                <img 
-                                    src="{{ Storage::url($image->file_path) }}" 
-                                    alt="User image"
-                                    class="w-full aspect-square object-cover"
+                                <a 
+                                    href="{{ route('dashboard.images.edit', $image->id) }}" 
+                                    class="block"
                                 >
-                            </a>
+                                    <img 
+                                        src="{{ Storage::url($image->file_path) }}" 
+                                        alt="User image"
+                                        class="w-full aspect-square object-cover"
+                                    >
+                                </a>
+                            </div>
                         @endforeach
                     </div>
                 @endif
@@ -102,11 +107,15 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
+                handle: 'img', // Make the image the drag handle
+                delay: 200, // Delay in ms before drag starts
+                delayOnTouchOnly: true, // Apply delay only on touch devices
+                touchStartThreshold: 10, // Number of pixels to move before drag starts
                 onEnd: function () {
                     // After dragging ends, build a list of IDs in new order
                     let orderedIds = [];
-                    grid.querySelectorAll('a').forEach((item) => {
-                        orderedIds.push(item.getAttribute('href').split('/').pop());
+                    grid.querySelectorAll('[data-id]').forEach((item) => {
+                        orderedIds.push(item.getAttribute('data-id'));
                     });
 
                     // Send the new order to the server
