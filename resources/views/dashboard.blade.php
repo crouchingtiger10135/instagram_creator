@@ -59,19 +59,19 @@
                 </form>
             </div>
 
-            {{-- 2) IMAGE GRID (Instagram-style) --}}
-            <div class="bg-white overflow-hidden shadow rounded-lg p-6">
-                <h3 class="text-lg font-semibold mb-4">
+            {{-- 2) IMAGE GRID (Instagram-style, Full-Width, No Padding) --}}
+            <div class="bg-white overflow-hidden shadow rounded-lg p-0">
+                <h3 class="text-lg font-semibold mb-4 px-6">
                     Your Images (Drag to Reorder)
                 </h3>
 
                 @if ($images->count() === 0)
-                    <p class="text-gray-500">No images yet.</p>
+                    <p class="text-gray-500 px-6">No images yet.</p>
                 @else
                     <!-- Instagram-style grid: No gaps, full width -->
                     <div 
                         id="image-grid"
-                        class="grid grid-cols-3 gap-0 mx-0"
+                        class="grid grid-cols-3 gap-0 w-screen mx-auto"
                     >
                         @foreach($images as $image)
                             <a 
