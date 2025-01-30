@@ -1,4 +1,4 @@
-<!-- resources/views/dashboard.blade.php -->
+{{-- resources/views/dashboard.blade.php --}}
 
 <x-app-layout>
     {{-- PAGE HEADER --}}
@@ -49,13 +49,7 @@
                                 class="relative"
                                 data-id="{{ $image->id }}"
                             >
-                                {{-- Drag Handle --}}
-                                <div class="absolute top-2 right-2 z-10 cursor-move drag-handle">
-                                    <!-- Drag Icon (e.g., grip lines) -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M6 10a2 2 0 114 0 2 2 0 01-4 0zm4 4a2 2 0 110-4 2 2 0 010 4zm0-8a2 2 0 110-4 2 2 0 010 4z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
+                                {{-- Entire Image is Draggable --}}
                                 <a 
                                     href="{{ route('dashboard.images.edit', $image->id) }}" 
                                     class="block"
@@ -179,7 +173,8 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
-                handle: '.drag-handle', // Make the drag handle the designated element
+                // Removed handle to make entire item draggable
+                // handle: '.drag-handle', 
                 delay: 100, // Reduced delay for quicker response
                 delayOnTouchOnly: true, // Apply delay only on touch devices
                 touchStartThreshold: 15, // Increased threshold to prevent accidental drags
