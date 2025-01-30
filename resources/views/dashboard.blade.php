@@ -10,6 +10,7 @@
             {{-- Add Images Button --}}
             <button 
                 id="add-image-button"
+                aria-label="Add new images"
                 class="inline-flex items-center px-4 py-2 
                        bg-green-600 border border-transparent 
                        rounded-md font-semibold text-white 
@@ -26,17 +27,15 @@
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-
-            {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
+            {{-- SUCCESS MESSAGE --}}
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- 2) IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
+            {{-- IMAGE GRID --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
-
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
@@ -50,6 +49,13 @@
                                 class="relative"
                                 data-id="{{ $image->id }}"
                             >
+                                {{-- Drag Handle --}}
+                                <div class="absolute top-2 left-2 z-10 cursor-move">
+                                    <!-- Drag Icon (e.g., hamburger menu) -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white bg-gray-800 rounded" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4 5h12v2H4V5zm0 4h12v2H4V9zm0 4h12v2H4v-2z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
                                 <a 
                                     href="{{ route('dashboard.images.edit', $image->id) }}" 
                                     class="block"
@@ -66,19 +72,21 @@
                     </div>
                 @endif
             </div>
-
         </div>
     </div>
 
     {{-- ADD IMAGE MODAL --}}
     <div 
         id="add-image-modal" 
-        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="modal-title"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden transition-opacity duration-300"
     >
-        <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6">
+        <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6 transform transition-transform duration-300">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Upload New Image</h3>
-                <button id="close-modal" class="text-gray-600 hover:text-gray-800">
+                <h3 id="modal-title" class="text-lg font-semibold">Upload New Image</h3>
+                <button id="close-modal" class="text-gray-600 hover:text-gray-800" aria-label="Close modal">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -130,6 +138,14 @@
         </div>
     </div>
 
+    {{-- Loading Spinner (Optional) --}}
+    <div id="loading-spinner" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+    </div>
+
     {{-- SORTABLEJS (CDN) --}}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
@@ -138,21 +154,33 @@
             const addButton = document.getElementById('add-image-button');
             const modal = document.getElementById('add-image-modal');
             const closeModal = document.getElementById('close-modal');
+            const loadingSpinner = document.getElementById('loading-spinner');
 
             // Function to open modal
             addButton.addEventListener('click', () => {
                 modal.classList.remove('hidden');
+                document.getElementById('photo').focus();
             });
 
             // Function to close modal
             closeModal.addEventListener('click', () => {
                 modal.classList.add('hidden');
+                addButton.focus();
             });
 
             // Close modal when clicking outside the modal content
             window.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     modal.classList.add('hidden');
+                    addButton.focus();
+                }
+            });
+
+            // Close modal on Esc key
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    addButton.focus();
                 }
             });
 
@@ -160,11 +188,19 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
-                handle: 'img', // Make the image the drag handle
-                delay: 200, // Delay in ms before drag starts
+                handle: '.drag-handle', // Make the drag handle the designated element
+                delay: 100, // Reduced delay for quicker response
                 delayOnTouchOnly: true, // Apply delay only on touch devices
                 touchStartThreshold: 10, // Number of pixels to move before drag starts
+                onStart: function () {
+                    grid.classList.add('dragging');
+                },
                 onEnd: function () {
+                    grid.classList.remove('dragging');
+                    
+                    // Show loading spinner
+                    loadingSpinner.classList.remove('hidden');
+
                     // After dragging ends, build a list of IDs in new order
                     let orderedIds = [];
                     grid.querySelectorAll('[data-id]').forEach((item) => {
@@ -184,15 +220,36 @@
                     .then(data => {
                         if (data.status === 'success') {
                             console.log('Order updated!');
+                            showToast('Order updated successfully!', 'success');
                         } else {
                             console.error('Failed to update order:', data);
+                            showToast('Failed to update order. Please try again.', 'error');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
+                        showToast('An error occurred. Please try again.', 'error');
+                    })
+                    .finally(() => {
+                        // Hide loading spinner
+                        loadingSpinner.classList.add('hidden');
                     });
                 }
             });
+
+            // Function to show toast notifications
+            function showToast(message, type) {
+                const toast = document.createElement('div');
+                toast.className = `fixed bottom-5 right-5 p-4 rounded-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} transition-opacity duration-300`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }
         });
     </script>
 </x-app-layout>
