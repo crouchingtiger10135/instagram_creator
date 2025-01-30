@@ -5,7 +5,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Your Dashboard') }}
+                {{ __('Your Feed') }}
             </h2>
             {{-- Add Images Button --}}
             <button 
@@ -36,9 +36,6 @@
 
             {{-- 2) IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
-                <h3 class="text-lg font-semibold mb-4 px-6">
-                    Your Images (Drag to Reorder)
-                </h3>
 
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
