@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ImageController extends Controller
 {
@@ -13,6 +14,7 @@ class ImageController extends Controller
      */
     public function index()
     {
+        // Fetch images for the authenticated user, ordered by position ascending
         $images = Image::where('user_id', auth()->id())
                        ->orderBy('position', 'asc')
                        ->get();
@@ -26,24 +28,38 @@ class ImageController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|max:10000',
+            'photo' => 'required|image|max:10000', // Max size: 10MB
         ]);
 
-        // store() returns something like "public/photos/xyz.jpg"
-        $path = $request->file('photo')->store('photos', 'public');
+        // Begin transaction to ensure data integrity
+        DB::beginTransaction();
 
+        try {
+            // Determine the next position value
+            $maxPosition = Image::where('user_id', auth()->id())->max('position') ?? 0;
+            $newPosition = $maxPosition + 1;
 
-        // place new image at the end => position = max + 1
-        $maxPosition = Image::where('user_id', auth()->id())->max('position') ?? 0;
+            // Store the image in the 'public/photos' directory
+            $path = $request->file('photo')->store('photos', 'public');
 
-        Image::create([
-            'user_id'   => auth()->id(),
-            'file_path' => $path,
-            'caption'   => '',         // or null, if you prefer
-            'position'  => $maxPosition + 1,
-        ]);
+            // Create the image record
+            Image::create([
+                'user_id'   => auth()->id(),
+                'file_path' => $path,
+                'caption'   => $request->input('caption', ''), // Optional caption
+                'position'  => $newPosition,
+            ]);
 
-        return back()->with('success', 'Image uploaded successfully!');
+            DB::commit();
+
+            return back()->with('success', 'Image uploaded successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the error for debugging
+            \Log::error('Image Upload Error: ' . $e->getMessage());
+
+            return back()->withErrors('Failed to upload image. Please try again.');
+        }
     }
 
     /**
@@ -53,23 +69,32 @@ class ImageController extends Controller
     public function reorder(Request $request)
     {
         $orderedIds = $request->input('orderedIds');
+
         if (!is_array($orderedIds)) {
-            return response()->json(['status' => 'error', 'message' => 'Invalid data'], 400);
+            return response()->json(['status' => 'error', 'message' => 'Invalid data format.'], 400);
         }
 
-        $userId = auth()->id();
-        $position = 1;
+        // Begin transaction to ensure all updates succeed
+        DB::beginTransaction();
 
-        foreach ($orderedIds as $imageId) {
-            // only update if it belongs to this user
-            Image::where('id', $imageId)
-                 ->where('user_id', $userId)
-                 ->update(['position' => $position]);
+        try {
+            foreach ($orderedIds as $index => $imageId) {
+                // Update only if the image belongs to the authenticated user
+                Image::where('id', $imageId)
+                     ->where('user_id', auth()->id())
+                     ->update(['position' => $index + 1]);
+            }
 
-            $position++;
+            DB::commit();
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the error for debugging
+            \Log::error('Image Reorder Error: ' . $e->getMessage());
+
+            return response()->json(['status' => 'error', 'message' => 'Failed to reorder images.'], 500);
         }
-
-        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -77,9 +102,9 @@ class ImageController extends Controller
      */
     public function edit(Image $image)
     {
-        // Ensure user owns this image
+        // Ensure the authenticated user owns this image
         if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+            abort(403, 'Unauthorized action.');
         }
 
         return view('edit', compact('image'));
@@ -90,31 +115,51 @@ class ImageController extends Controller
      */
     public function update(Request $request, Image $image)
     {
-        // Ensure user is owner
+        // Ensure the authenticated user owns this image
         if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+            abort(403, 'Unauthorized action.');
         }
 
-        // Validate: caption is optional, file is optional
+        // Validate inputs
         $request->validate([
-            'caption' => 'nullable|string|max:255',
-            'new_photo' => 'nullable|image|max:10000',
+            'caption'    => 'nullable|string|max:255',
+            'new_photo'  => 'nullable|image|max:10000', // Max size: 10MB
         ]);
 
-        // If user uploaded a new file
-        if ($request->hasFile('new_photo')) {
-            // Optionally delete old file, if desired:
-            // Storage::delete($image->file_path);
+        // Begin transaction
+        DB::beginTransaction();
 
-            $path = $request->file('new_photo')->store('public/photos');
-            $image->file_path = $path;
+        try {
+            // Update caption if provided
+            if ($request->filled('caption')) {
+                $image->caption = $request->input('caption');
+            }
+
+            // If a new photo is uploaded
+            if ($request->hasFile('new_photo')) {
+                // Optionally, delete the old photo
+                if (Storage::disk('public')->exists($image->file_path)) {
+                    Storage::disk('public')->delete($image->file_path);
+                }
+
+                // Store the new photo
+                $newPath = $request->file('new_photo')->store('photos', 'public');
+                $image->file_path = $newPath;
+            }
+
+            // Save the changes
+            $image->save();
+
+            DB::commit();
+
+            return redirect()->route('dashboard')->with('success', 'Image updated successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the error for debugging
+            \Log::error('Image Update Error: ' . $e->getMessage());
+
+            return back()->withErrors('Failed to update image. Please try again.');
         }
-
-        // Update caption
-        $image->caption = $request->input('caption', '');
-        $image->save();
-
-        return redirect()->route('dashboard')->with('success', 'Image updated successfully!');
     }
 
     /**
@@ -122,16 +167,39 @@ class ImageController extends Controller
      */
     public function destroy(Image $image)
     {
-        // Ensure user is owner
+        // Ensure the authenticated user owns this image
         if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+            abort(403, 'Unauthorized action.');
         }
 
-        // Optionally delete the file from storage
-        // Storage::delete($image->file_path);
+        // Begin transaction
+        DB::beginTransaction();
 
-        $image->delete();
+        try {
+            $deletedPosition = $image->position;
 
-        return back()->with('success', 'Image deleted successfully!');
+            // Optionally, delete the image file from storage
+            if (Storage::disk('public')->exists($image->file_path)) {
+                Storage::disk('public')->delete($image->file_path);
+            }
+
+            // Delete the image record
+            $image->delete();
+
+            // Decrement the position of images that were after the deleted image
+            Image::where('user_id', auth()->id())
+                 ->where('position', '>', $deletedPosition)
+                 ->decrement('position');
+
+            DB::commit();
+
+            return back()->with('success', 'Image deleted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the error for debugging
+            \Log::error('Image Deletion Error: ' . $e->getMessage());
+
+            return back()->withErrors('Failed to delete image. Please try again.');
+        }
     }
 }
