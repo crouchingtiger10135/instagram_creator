@@ -27,14 +27,14 @@
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            {{-- SUCCESS MESSAGE --}}
+            {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- IMAGE GRID --}}
+            {{-- IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
@@ -49,13 +49,6 @@
                                 class="relative"
                                 data-id="{{ $image->id }}"
                             >
-                                {{-- Drag Handle --}}
-                                <div class="absolute top-2 left-2 z-10 cursor-move">
-                                    <!-- Drag Icon (e.g., hamburger menu) -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white bg-gray-800 rounded" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M4 5h12v2H4V5zm0 4h12v2H4V9zm0 4h12v2H4v-2z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
                                 <a 
                                     href="{{ route('dashboard.images.edit', $image->id) }}" 
                                     class="block"
@@ -188,10 +181,11 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
-                handle: '.drag-handle', // Make the drag handle the designated element
+                // Removed 'handle: img' to allow dragging from anywhere
+                // handle: 'img', 
                 delay: 100, // Reduced delay for quicker response
                 delayOnTouchOnly: true, // Apply delay only on touch devices
-                touchStartThreshold: 10, // Number of pixels to move before drag starts
+                touchStartThreshold: 15, // Increased threshold to prevent accidental drags
                 onStart: function () {
                     grid.classList.add('dragging');
                 },
