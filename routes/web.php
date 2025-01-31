@@ -33,7 +33,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/instagram/auth', [InstagramController::class, 'redirectToInstagram'])->name('instagram.auth');
     Route::get('/instagram/callback', [InstagramController::class, 'handleInstagramCallback'])->name('instagram.callback');
 });
-
 });
 
 // Breeze auth routes: /login, /register, etc.
