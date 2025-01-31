@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
-use App\Models\Image;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Socialite;
+use App\Models\User;
 
 class InstagramController extends Controller
 {
@@ -15,7 +14,9 @@ class InstagramController extends Controller
      */
     public function redirectToInstagram()
     {
-        return Socialite::driver('instagram')->scopes(['user_profile', 'user_media'])->redirect();
+        return Socialite::driver('instagram')
+                        ->scopes(['user_profile', 'user_media'])
+                        ->redirect();
     }
 
     /**
@@ -24,17 +25,20 @@ class InstagramController extends Controller
     public function handleInstagramCallback()
     {
         try {
+            // Retrieve the user information from Instagram
             $instagramUser = Socialite::driver('instagram')->user();
 
-            // Save or update the user's Instagram access token
+            // Find the authenticated user
             $user = Auth::user();
+
+            // Update user's Instagram details
+            $user->instagram_user_id = $instagramUser->getId();
             $user->instagram_access_token = $instagramUser->token;
-            $user->instagram_user_id = $instagramUser->id;
             $user->save();
 
             return redirect()->route('dashboard')->with('success', 'Instagram account connected successfully!');
         } catch (\Exception $e) {
-            \Log::error('Instagram OAuth Error: ' . $e->getMessage());
+            \Log::error('Instagram Callback Error: ' . $e->getMessage());
             return redirect()->route('dashboard')->withErrors('Failed to connect Instagram account.');
         }
     }
