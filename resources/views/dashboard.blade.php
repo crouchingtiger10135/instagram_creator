@@ -26,35 +26,28 @@
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
+            {{-- SUCCESS MESSAGE --}}
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
+            {{-- IMAGE GRID --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
-                    <!-- Instagram-style grid: 3 columns, no gaps, full width -->
+                    <!-- 3-column, gap-0, full-width grid -->
                     <div 
                         id="image-grid"
                         class="grid grid-cols-3 gap-0 w-full mx-auto"
                     >
                         @foreach($images as $image)
-                            <div 
-                                class="relative"
-                                data-id="{{ $image->id }}"
-                            >
-                                {{-- Entire Image is Draggable --}}
-                                <a 
-                                    href="{{ route('dashboard.images.edit', $image->id) }}" 
-                                    class="block"
-                                >
+                            <div class="relative" data-id="{{ $image->id }}">
+                                <a href="{{ route('dashboard.images.edit', $image->id) }}" class="block">
                                     <img 
-                                        src="{{ Storage::url($image->file_path) }}" 
+                                        src="{{ asset('storage/'.$image->file_path) }}" 
                                         alt="{{ $image->caption ?? 'User image' }}"
                                         class="w-full aspect-square object-cover"
                                         loading="lazy"
@@ -68,7 +61,7 @@
         </div>
     </div>
 
-    {{-- ADD IMAGE MODAL (Now supports multiple images) --}}
+    {{-- ADD IMAGE MODAL (Multiple Images) --}}
     <div 
         id="add-image-modal" 
         role="dialog" 
@@ -80,8 +73,10 @@
             <div class="flex justify-between items-center mb-4">
                 <h3 id="modal-title" class="text-lg font-semibold">Upload New Image(s)</h3>
                 <button id="close-modal" class="text-gray-600 hover:text-gray-800" aria-label="Close modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" 
+                         viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" 
+                              stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
@@ -94,7 +89,7 @@
             >
                 @csrf
 
-                {{-- Photo(s) Input (Multiple) --}}
+                {{-- Multiple Photos Input --}}
                 <div class="mb-4">
                     <label for="photos" class="block font-medium">Select Image(s)</label>
                     <input 
@@ -163,19 +158,19 @@
             const closeModal = document.getElementById('close-modal');
             let isDragging = false; // Flag to track dragging state
 
-            // Function to open modal
+            // Open modal
             addButton.addEventListener('click', () => {
                 modal.classList.remove('hidden');
                 document.getElementById('photos').focus();
             });
 
-            // Function to close modal
+            // Close modal
             closeModal.addEventListener('click', () => {
                 modal.classList.add('hidden');
                 addButton.focus();
             });
 
-            // Close modal when clicking outside the modal content
+            // Close modal on outside click
             window.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     modal.classList.add('hidden');
@@ -183,7 +178,7 @@
                 }
             });
 
-            // Close modal on Esc key
+            // Close modal on Escape key
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
@@ -192,60 +187,62 @@
             });
 
             // Initialize SortableJS on the grid
-            new Sortable(grid, {
-                animation: 150,
-                ghostClass: 'bg-gray-100',
-                delay: 100, // Reduced delay for quicker response
-                delayOnTouchOnly: true, // Apply delay only on touch devices
-                touchStartThreshold: 15, // Increased threshold to prevent accidental drags
-                onStart: function () {
-                    isDragging = true;
-                    grid.classList.add('dragging');
-                },
-                onEnd: function () {
-                    isDragging = false;
-                    grid.classList.remove('dragging');
-                    
-                    // After dragging ends, build a list of IDs in the new order
-                    let orderedIds = [];
-                    grid.querySelectorAll('[data-id]').forEach((item) => {
-                        orderedIds.push(item.getAttribute('data-id'));
-                    });
+            if (grid) {
+                new Sortable(grid, {
+                    animation: 150,
+                    ghostClass: 'bg-gray-100',
+                    delay: 100,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 15,
+                    onStart: function () {
+                        isDragging = true;
+                        grid.classList.add('dragging');
+                    },
+                    onEnd: function () {
+                        isDragging = false;
+                        grid.classList.remove('dragging');
 
-                    // Send the new order to the server
-                    fetch('{{ route("dashboard.reorder") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ orderedIds: orderedIds })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            console.log('Order updated!');
-                            // Optionally, you can refresh the page or give some indication
-                        } else {
-                            console.error('Failed to update order:', data);
-                            alert('Failed to update order. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while updating the order.');
-                    });
-                }
-            });
+                        // Build a list of IDs in the new order
+                        let orderedIds = [];
+                        grid.querySelectorAll('[data-id]').forEach((item) => {
+                            orderedIds.push(item.getAttribute('data-id'));
+                        });
 
-            // Prevent navigation if dragging occurred
-            grid.querySelectorAll('a').forEach(function(anchor) {
-                anchor.addEventListener('click', function(e) {
-                    if (isDragging) {
-                        e.preventDefault();
+                        // Send new order to the server
+                        fetch('{{ route("dashboard.reorder") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ orderedIds: orderedIds })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                console.log('Order updated!');
+                                // Optionally show a toast or similar
+                            } else {
+                                console.error('Failed to update order:', data);
+                                alert('Failed to update order. Please try again.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while updating the order.');
+                        });
                     }
                 });
-            });
+
+                // Prevent navigation when dragging
+                grid.querySelectorAll('a').forEach(function(anchor) {
+                    anchor.addEventListener('click', function(e) {
+                        if (isDragging) {
+                            e.preventDefault();
+                        }
+                    });
+                });
+            }
         });
     </script>
 </x-app-layout>
