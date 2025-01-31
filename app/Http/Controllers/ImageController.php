@@ -28,23 +28,28 @@ class ImageController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'photo' => 'required|image|max:10000', // Max size: 10MB
+            'photo'    => 'required|image|max:10000', // Max size: 10MB
+            'caption'  => 'nullable|string|max:255',  // Optional caption
         ]);
 
         // Begin transaction to ensure data integrity
         DB::beginTransaction();
 
         try {
-            // Determine the next position value
-            $maxPosition = Image::where('user_id', auth()->id())->max('position') ?? 0;
-            $newPosition = $maxPosition + 1;
+            $userId = auth()->id();
+
+            // Increment the position of all existing images by 1
+            Image::where('user_id', $userId)->increment('position');
+
+            // Assign position = 1 to the new image
+            $newPosition = 1;
 
             // Store the image in the 'public/photos' directory
             $path = $request->file('photo')->store('photos', 'public');
 
             // Create the image record
             Image::create([
-                'user_id'   => auth()->id(),
+                'user_id'   => $userId,
                 'file_path' => $path,
                 'caption'   => $request->input('caption', ''), // Optional caption
                 'position'  => $newPosition,
@@ -74,6 +79,8 @@ class ImageController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Invalid data format.'], 400);
         }
 
+        $userId = auth()->id();
+
         // Begin transaction to ensure all updates succeed
         DB::beginTransaction();
 
@@ -81,7 +88,7 @@ class ImageController extends Controller
             foreach ($orderedIds as $index => $imageId) {
                 // Update only if the image belongs to the authenticated user
                 Image::where('id', $imageId)
-                     ->where('user_id', auth()->id())
+                     ->where('user_id', $userId)
                      ->update(['position' => $index + 1]);
             }
 
@@ -137,7 +144,7 @@ class ImageController extends Controller
 
             // If a new photo is uploaded
             if ($request->hasFile('new_photo')) {
-                // Optionally, delete the old photo
+                // Delete the old photo if it exists
                 if (Storage::disk('public')->exists($image->file_path)) {
                     Storage::disk('public')->delete($image->file_path);
                 }
@@ -178,7 +185,7 @@ class ImageController extends Controller
         try {
             $deletedPosition = $image->position;
 
-            // Optionally, delete the image file from storage
+            // Delete the image file from storage if it exists
             if (Storage::disk('public')->exists($image->file_path)) {
                 Storage::disk('public')->delete($image->file_path);
             }
@@ -203,3 +210,4 @@ class ImageController extends Controller
         }
     }
 }
+
