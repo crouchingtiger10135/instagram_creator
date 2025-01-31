@@ -44,15 +44,17 @@
                         class="grid grid-cols-3 gap-0 w-full mx-auto"
                     >
                         @foreach($images as $image)
-                            <div class="relative" data-id="{{ $image->id }}">
-                                <a href="{{ route('dashboard.images.edit', $image->id) }}" class="block">
-                                    <img 
-                                        src="{{ asset('storage/'.$image->file_path) }}" 
-                                        alt="{{ $image->caption ?? 'User image' }}"
-                                        class="w-full aspect-square object-cover"
-                                        loading="lazy"
-                                    >
-                                </a>
+                            <div 
+                                class="relative" 
+                                data-id="{{ $image->id }}"
+                            >
+                                <!-- Removed the link to images.edit to avoid the missing view error -->
+                                <img 
+                                    src="{{ asset('storage/'.$image->file_path) }}" 
+                                    alt="{{ $image->caption ?? 'User image' }}"
+                                    class="w-full aspect-square object-cover"
+                                    loading="lazy"
+                                >
                             </div>
                         @endforeach
                     </div>
@@ -186,7 +188,7 @@
                 }
             });
 
-            // Initialize SortableJS on the grid
+            // Initialize SortableJS on the grid (if it exists)
             if (grid) {
                 new Sortable(grid, {
                     animation: 150,
@@ -221,7 +223,6 @@
                         .then(data => {
                             if (data.status === 'success') {
                                 console.log('Order updated!');
-                                // Optionally show a toast or similar
                             } else {
                                 console.error('Failed to update order:', data);
                                 alert('Failed to update order. Please try again.');
