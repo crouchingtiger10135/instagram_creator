@@ -44,17 +44,19 @@
                         class="grid grid-cols-3 gap-0 w-full mx-auto"
                     >
                         @foreach($images as $image)
-                            <div 
-                                class="relative" 
-                                data-id="{{ $image->id }}"
-                            >
-                                <!-- Removed the link to images.edit to avoid the missing view error -->
-                                <img 
-                                    src="{{ asset('storage/'.$image->file_path) }}" 
-                                    alt="{{ $image->caption ?? 'User image' }}"
-                                    class="w-full aspect-square object-cover"
-                                    loading="lazy"
+                            <div class="relative" data-id="{{ $image->id }}">
+                                <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
+                                <a 
+                                    href="{{ route('dashboard.images.edit', $image->id) }}" 
+                                    class="block"
                                 >
+                                    <img 
+                                        src="{{ asset('storage/'.$image->file_path) }}" 
+                                        alt="{{ $image->caption ?? 'User image' }}"
+                                        class="w-full aspect-square object-cover"
+                                        loading="lazy"
+                                    >
+                                </a>
                             </div>
                         @endforeach
                     </div>
@@ -75,9 +77,9 @@
             <div class="flex justify-between items-center mb-4">
                 <h3 id="modal-title" class="text-lg font-semibold">Upload New Image(s)</h3>
                 <button id="close-modal" class="text-gray-600 hover:text-gray-800" aria-label="Close modal">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                          viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" 
+                        <path stroke-linecap="round" stroke-linejoin="round"
                               stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
