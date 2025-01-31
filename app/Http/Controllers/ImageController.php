@@ -101,13 +101,11 @@ class ImageController extends Controller
     /**
      * (Optional) Show the form for editing a single image.
      */
-    public function edit(Image $image)
+       public function edit(Image $image)
     {
-        // If using authorization policies, ensure the user owns this image
-        // $this->authorize('update', $image);
-
-        return view('images.edit', compact('image'));
+        return view('edit', compact('image'));
     }
+    
 
     /**
      * (Optional) Update a single image in storage.
