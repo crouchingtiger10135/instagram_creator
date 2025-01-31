@@ -5,15 +5,46 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Your Feed') }}
+                {{ __('Your Image Feed') }}
             </h2>
+            {{-- Action Buttons --}}
+            <div class="flex space-x-2">
+                {{-- Add Images Button --}}
+                <button 
+                    id="add-image-button"
+                    aria-label="Add new images"
+                    class="inline-flex items-center px-4 py-2 
+                           bg-green-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-green-700 focus:outline-none 
+                           focus:ring-2 focus:ring-green-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Add Images
+                </button>
+
+                {{-- Import Instagram Images Button --}}
+                <a 
+                    href="{{ route('dashboard.importInstagram') }}" 
+                    class="inline-flex items-center px-4 py-2 
+                           bg-purple-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-purple-700 focus:outline-none 
+                           focus:ring-2 focus:ring-purple-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Import Last 9 Instagram Images
+                </a>
+            </div>
         </div>
     </x-slot>
 
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            {{-- SUCCESS MESSAGE (e.g., after uploading/importing/editing) --}}
+            {{-- SUCCESS MESSAGE --}}
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
@@ -31,33 +62,68 @@
                 </div>
             @endif
 
-            {{-- IMAGE GRID (Responsive, 3 Columns, Full-Width) --}}
+            {{-- IMAGE GRID --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 @if ($images->count() === 0)
-                    <p class="text-gray-500 px-6">No images yet.</p>
+                    <p class="text-gray-500 px-6">No images to display. Start by uploading or importing images.</p>
                 @else
                     <!-- Instagram-style grid: 3 columns, no gaps, full width -->
                     <div 
                         id="image-grid"
-                        class="grid grid-cols-3 gap-0 w-full mx-auto"
+                        class="grid grid-cols-3 gap-4 p-4"
                     >
                         @foreach($images as $image)
                             <div 
-                                class="relative"
+                                class="relative bg-gray-100 rounded-lg overflow-hidden"
                                 data-id="{{ $image->id }}"
                             >
-                                {{-- Entire Image is Draggable --}}
-                                <a 
-                                    href="{{ route('dashboard.images.edit', $image->id) }}" 
-                                    class="block"
+                                {{-- Image --}}
+                                <img 
+                                    src="{{ $image->url }}" 
+                                    alt="{{ $image->caption ?? 'User image' }}"
+                                    class="w-full h-48 object-cover"
+                                    loading="lazy"
                                 >
-                                    <img 
-                                        src="{{ Storage::url($image->file_path) }}" 
-                                        alt="{{ $image->caption ?? 'User image' }}"
-                                        class="w-full aspect-square object-cover"
-                                        loading="lazy"
+                                
+                                {{-- Caption Overlay --}}
+                                @if($image->caption)
+                                    <div class="absolute bottom-0 bg-black bg-opacity-50 text-white w-full p-2 text-sm">
+                                        {{ Str::limit($image->caption, 100) }}
+                                    </div>
+                                @endif
+
+                                {{-- Edit and Delete Buttons (Optional) --}}
+                                <div class="absolute top-2 right-2 flex space-x-2">
+                                    {{-- Edit Button --}}
+                                    <a 
+                                        href="{{ route('dashboard.images.edit', $image->id) }}" 
+                                        class="text-white bg-blue-500 hover:bg-blue-600 rounded-full p-1"
+                                        aria-label="Edit Image"
                                     >
-                                </a>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M19.778 4.222a2.5 2.5 0 010 3.536L6.343 21.172a2.5 2.5 0 01-1.768.732H3v-3.105a2.5 2.5 0 01.732-1.768L19.778 4.222z" />
+                                        </svg>
+                                    </a>
+
+                                    {{-- Delete Button --}}
+                                    <form 
+                                        action="{{ route('dashboard.images.destroy', $image->id) }}" 
+                                        method="POST" 
+                                        onsubmit="return confirm('Are you sure you want to delete this image?');"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <button 
+                                            type="submit" 
+                                            class="text-white bg-red-500 hover:bg-red-600 rounded-full p-1"
+                                            aria-label="Delete Image"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3H5m16 0h-4" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -187,62 +253,66 @@
             });
 
             // Initialize SortableJS on the grid
-            new Sortable(grid, {
-                animation: 150,
-                ghostClass: 'bg-gray-100',
-                delay: 100, // Reduced delay for quicker response
-                delayOnTouchOnly: true, // Apply delay only on touch devices
-                touchStartThreshold: 15, // Increased threshold to prevent accidental drags
-                onStart: function () {
-                    isDragging = true;
-                    grid.classList.add('dragging');
-                },
-                onEnd: function () {
-                    isDragging = false;
-                    grid.classList.remove('dragging');
-                    
-                    // After dragging ends, build a list of IDs in new order
-                    let orderedIds = [];
-                    grid.querySelectorAll('[data-id]').forEach((item) => {
-                        orderedIds.push(item.getAttribute('data-id'));
-                    });
+            if(grid) {
+                new Sortable(grid, {
+                    animation: 150,
+                    ghostClass: 'bg-gray-100',
+                    delay: 100, // Reduced delay for quicker response
+                    delayOnTouchOnly: true, // Apply delay only on touch devices
+                    touchStartThreshold: 15, // Increased threshold to prevent accidental drags
+                    onStart: function () {
+                        isDragging = true;
+                        grid.classList.add('dragging');
+                    },
+                    onEnd: function () {
+                        isDragging = false;
+                        grid.classList.remove('dragging');
+                        
+                        // After dragging ends, build a list of IDs in new order
+                        let orderedIds = [];
+                        grid.querySelectorAll('[data-id]').forEach((item) => {
+                            orderedIds.push(item.getAttribute('data-id'));
+                        });
 
-                    // Send the new order to the server
-                    fetch('{{ route("dashboard.reorder") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ orderedIds: orderedIds })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            console.log('Order updated!');
-                            // Optionally, you can refresh the page or give some indication
-                        } else {
-                            console.error('Failed to update order:', data);
+                        // Send the new order to the server
+                        fetch('{{ route("dashboard.reorder") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ orderedIds: orderedIds })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                console.log('Order updated!');
+                                // Optionally, you can refresh the page or give some indication
+                            } else {
+                                console.error('Failed to update order:', data);
+                                // Optionally, handle the error (e.g., show an alert)
+                                alert('Failed to update order. Please try again.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
                             // Optionally, handle the error (e.g., show an alert)
-                            alert('Failed to update order. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        // Optionally, handle the error (e.g., show an alert)
-                        alert('An error occurred while updating the order.');
-                    });
-                }
-            });
-
-            // Prevent navigation if dragging occurred
-            grid.querySelectorAll('a').forEach(function(anchor) {
-                anchor.addEventListener('click', function(e) {
-                    if (isDragging) {
-                        e.preventDefault();
+                            alert('An error occurred while updating the order.');
+                        });
                     }
                 });
-            });
+            }
+
+            // Prevent navigation if dragging occurred
+            if(grid) {
+                grid.querySelectorAll('a').forEach(function(anchor) {
+                    anchor.addEventListener('click', function(e) {
+                        if (isDragging) {
+                            e.preventDefault();
+                        }
+                    });
+                });
+            }
         });
     </script>
 </x-app-layout>
