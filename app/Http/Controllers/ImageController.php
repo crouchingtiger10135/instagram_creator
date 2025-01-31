@@ -200,7 +200,8 @@ class ImageController extends Controller
 
             DB::commit();
 
-            return back()->with('success', 'Image deleted successfully!');
+            // Redirect to dashboard with success message
+            return redirect()->route('dashboard')->with('success', 'Image deleted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             // Log the error for debugging
@@ -210,4 +211,3 @@ class ImageController extends Controller
         }
     }
 }
-
