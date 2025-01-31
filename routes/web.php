@@ -32,6 +32,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth'])->group(function () {
     Route::get('/instagram/auth', [InstagramController::class, 'redirectToInstagram'])->name('instagram.auth');
     Route::get('/instagram/callback', [InstagramController::class, 'handleInstagramCallback'])->name('instagram.callback');
+    Route::get('/dashboard/import-instagram', [ImageController::class, 'importInstagramImages'])->name('dashboard.importInstagram');
+    
 });
 });
 
