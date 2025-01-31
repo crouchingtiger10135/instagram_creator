@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+     'instagram_user_id',
+    'instagram_access_token',
     ];
 
     /**
