@@ -6,11 +6,13 @@ use App\Models\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
 
 class ImageController extends Controller
 {
     /**
-     * Display the user's images in a 3-column feed.
+     * Display the dashboard with images.
      */
     public function index()
     {
@@ -23,53 +25,131 @@ class ImageController extends Controller
     }
 
     /**
-     * Handle uploads (POST /dashboard).
+     * Store a newly uploaded image.
      */
     public function store(Request $request)
     {
+        // Validate the request
         $request->validate([
-            'photo'    => 'required|image|max:10000', // Max size: 10MB
-            'caption'  => 'nullable|string|max:255',  // Optional caption
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'caption' => 'nullable|string|max:255',
         ]);
 
-        // Begin transaction to ensure data integrity
+        // Handle the uploaded image
+        if ($request->hasFile('photo')) {
+            $image = $request->file('photo');
+            $filename = time() . '.' . $image->getClientOriginalExtension();
+
+            // Optional: Image Optimization (e.g., resize using Intervention Image)
+            // $resizedImage = \Intervention\Image\Facades\Image::make($image)->resize(1200, null, function ($constraint) {
+            //     $constraint->aspectRatio();
+            //     $constraint->upsize();
+            // })->encode();
+            // Storage::disk('public')->put('images/' . $filename, $resizedImage);
+
+            // Directly store the image
+            Storage::disk('public')->put('images/' . $filename, file_get_contents($image));
+
+            // Assign position (new images first)
+            Image::where('user_id', auth()->id())->increment('position');
+            $newPosition = 1;
+
+            // Create image record
+            Image::create([
+                'user_id' => auth()->id(),
+                'file_path' => 'images/' . $filename,
+                'caption' => $request->input('caption'),
+                'position' => $newPosition,
+            ]);
+
+            return redirect()->route('dashboard')->with('success', 'Image uploaded successfully!');
+        }
+
+        return back()->withErrors('Please select an image to upload.');
+    }
+
+    /**
+     * Import the last 9 images from Instagram.
+     */
+    public function importInstagramImages()
+    {
+        $user = Auth::user();
+
+        // Check if user has connected Instagram
+        if (!$user->instagram_access_token) {
+            return redirect()->route('instagram.auth')->withErrors('Please connect your Instagram account first.');
+        }
+
+        // Fetch media from Instagram
+        $response = Http::get('https://graph.instagram.com/me/media', [
+            'fields' => 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp',
+            'access_token' => $user->instagram_access_token,
+            'limit' => 9,
+        ]);
+
+        if ($response->failed()) {
+            \Log::error('Instagram API Error: ' . $response->body());
+            return back()->withErrors('Failed to fetch Instagram images.');
+        }
+
+        $media = $response->json()['data'];
+
+        // Begin transaction
         DB::beginTransaction();
 
         try {
-            $userId = auth()->id();
+            foreach ($media as $item) {
+                // Only process IMAGE media types
+                if ($item['media_type'] !== 'IMAGE') {
+                    continue;
+                }
 
-            // Increment the position of all existing images by 1
-            Image::where('user_id', $userId)->increment('position');
+                // Check if the image already exists (by Instagram media ID)
+                $existingImage = Image::where('instagram_media_id', $item['id'])
+                                      ->where('user_id', $user->id)
+                                      ->first();
 
-            // Assign position = 1 to the new image
-            $newPosition = 1;
+                if ($existingImage) {
+                    continue; // Skip already imported images
+                }
 
-            // Store the image in the 'public/photos' directory
-            $path = $request->file('photo')->store('photos', 'public');
+                // Download the image
+                $imageContent = file_get_contents($item['media_url']);
+                if ($imageContent === false) {
+                    \Log::warning("Failed to download image: {$item['media_url']}");
+                    continue; // Skip this image if download fails
+                }
 
-            // Create the image record
-            Image::create([
-                'user_id'   => $userId,
-                'file_path' => $path,
-                'caption'   => $request->input('caption', ''), // Optional caption
-                'position'  => $newPosition,
-            ]);
+                $imageExtension = pathinfo($item['media_url'], PATHINFO_EXTENSION);
+                $imageName = 'instagram/' . $item['id'] . '.' . $imageExtension;
+                Storage::disk('public')->put($imageName, $imageContent);
+
+                // Assign position (new images first)
+                Image::where('user_id', $user->id)->increment('position');
+                $newPosition = 1;
+
+                // Create image record
+                Image::create([
+                    'user_id' => $user->id,
+                    'instagram_media_id' => $item['id'], // Track Instagram media
+                    'file_path' => $imageName,
+                    'caption' => $item['caption'] ?? '',
+                    'position' => $newPosition,
+                ]);
+            }
 
             DB::commit();
 
-            return back()->with('success', 'Image uploaded successfully!');
+            return back()->with('success', 'Instagram images imported successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log the error for debugging
-            \Log::error('Image Upload Error: ' . $e->getMessage());
-
-            return back()->withErrors('Failed to upload image. Please try again.');
+            \Log::error('Instagram Import Error: ' . $e->getMessage());
+            return back()->withErrors('Failed to import Instagram images.');
         }
     }
 
     /**
-     * Reorder images (via drag-and-drop).
-     * Expects JSON: { "orderedIds": [imageId1, imageId2, ...] }
+     * Reorder images based on the new order received from the frontend.
      */
     public function reorder(Request $request)
     {
@@ -105,109 +185,68 @@ class ImageController extends Controller
     }
 
     /**
-     * Show the edit form for a single image (GET /dashboard/images/{image}/edit).
+     * Show the form for editing the specified image.
      */
     public function edit(Image $image)
     {
-        // Ensure the authenticated user owns this image
-        if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Authorization: Ensure the user owns the image
+        $this->authorize('update', $image);
 
-        return view('edit', compact('image'));
+        return view('images.edit', compact('image'));
     }
 
     /**
-     * Update an image's caption or file (PATCH /dashboard/images/{image}).
+     * Update the specified image in storage.
      */
     public function update(Request $request, Image $image)
     {
-        // Ensure the authenticated user owns this image
-        if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Authorization: Ensure the user owns the image
+        $this->authorize('update', $image);
 
-        // Validate inputs
+        // Validate the request
         $request->validate([
-            'caption'    => 'nullable|string|max:255',
-            'new_photo'  => 'nullable|image|max:10000', // Max size: 10MB
+            'caption' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        // Begin transaction
-        DB::beginTransaction();
+        // Handle the uploaded image if present
+        if ($request->hasFile('photo')) {
+            // Delete the old image from storage
+            Storage::disk('public')->delete($image->file_path);
 
-        try {
-            // Update caption if provided
-            if ($request->filled('caption')) {
-                $image->caption = $request->input('caption');
-            }
+            $newImage = $request->file('photo');
+            $filename = time() . '.' . $newImage->getClientOriginalExtension();
+            $newFilePath = 'images/' . $filename;
 
-            // If a new photo is uploaded
-            if ($request->hasFile('new_photo')) {
-                // Delete the old photo if it exists
-                if (Storage::disk('public')->exists($image->file_path)) {
-                    Storage::disk('public')->delete($image->file_path);
-                }
+            // Store the new image
+            Storage::disk('public')->put($newFilePath, file_get_contents($newImage));
 
-                // Store the new photo
-                $newPath = $request->file('new_photo')->store('photos', 'public');
-                $image->file_path = $newPath;
-            }
-
-            // Save the changes
-            $image->save();
-
-            DB::commit();
-
-            return redirect()->route('dashboard')->with('success', 'Image updated successfully!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            // Log the error for debugging
-            \Log::error('Image Update Error: ' . $e->getMessage());
-
-            return back()->withErrors('Failed to update image. Please try again.');
+            // Update the file path in the database
+            $image->file_path = $newFilePath;
         }
+
+        // Update the caption
+        $image->caption = $request->input('caption');
+
+        $image->save();
+
+        return redirect()->route('dashboard')->with('success', 'Image updated successfully!');
     }
 
     /**
-     * Delete an image (DELETE /dashboard/images/{image}).
+     * Remove the specified image from storage.
      */
     public function destroy(Image $image)
     {
-        // Ensure the authenticated user owns this image
-        if ($image->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        // Authorization: Ensure the user owns the image
+        $this->authorize('delete', $image);
 
-        // Begin transaction
-        DB::beginTransaction();
+        // Delete the image from storage
+        Storage::disk('public')->delete($image->file_path);
 
-        try {
-            $deletedPosition = $image->position;
+        // Delete the image record from the database
+        $image->delete();
 
-            // Delete the image file from storage if it exists
-            if (Storage::disk('public')->exists($image->file_path)) {
-                Storage::disk('public')->delete($image->file_path);
-            }
-
-            // Delete the image record
-            $image->delete();
-
-            // Decrement the position of images that were after the deleted image
-            Image::where('user_id', auth()->id())
-                 ->where('position', '>', $deletedPosition)
-                 ->decrement('position');
-
-            DB::commit();
-
-            // Redirect to dashboard without a success message
-            return redirect()->route('dashboard');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            // Log the error for debugging
-            \Log::error('Image Deletion Error: ' . $e->getMessage());
-
-            return back()->withErrors('Failed to delete image. Please try again.');
-        }
+        return redirect()->route('dashboard')->with('success', 'Image deleted successfully!');
     }
 }
