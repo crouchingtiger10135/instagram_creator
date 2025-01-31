@@ -113,6 +113,24 @@
                     @enderror
                 </div>
 
+                {{-- Optional Caption Input --}}
+                <div class="mb-4">
+                    <label for="caption" class="block font-medium">Caption (Optional)</label>
+                    <input 
+                        type="text" 
+                        name="caption" 
+                        id="caption" 
+                        maxlength="255"
+                        class="block w-full text-sm text-gray-900 
+                               border border-gray-300 rounded-lg 
+                               bg-gray-50 focus:outline-none mt-1"
+                        value="{{ old('caption') }}"
+                    >
+                    @error('caption')
+                        <div class="text-red-600 text-sm mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 {{-- Submit Button --}}
                 <div class="flex justify-end">
                     <button 
@@ -140,6 +158,8 @@
             const addButton = document.getElementById('add-image-button');
             const modal = document.getElementById('add-image-modal');
             const closeModal = document.getElementById('close-modal');
+
+            let isDragging = false; // Flag to track dragging state
 
             // Function to open modal
             addButton.addEventListener('click', () => {
@@ -173,12 +193,17 @@
             new Sortable(grid, {
                 animation: 150,
                 ghostClass: 'bg-gray-100',
-                // Removed handle to make entire item draggable
-                // handle: '.drag-handle', 
                 delay: 100, // Reduced delay for quicker response
                 delayOnTouchOnly: true, // Apply delay only on touch devices
                 touchStartThreshold: 15, // Increased threshold to prevent accidental drags
+                onStart: function () {
+                    isDragging = true;
+                    grid.classList.add('dragging');
+                },
                 onEnd: function () {
+                    isDragging = false;
+                    grid.classList.remove('dragging');
+                    
                     // After dragging ends, build a list of IDs in new order
                     let orderedIds = [];
                     grid.querySelectorAll('[data-id]').forEach((item) => {
@@ -202,13 +227,24 @@
                         } else {
                             console.error('Failed to update order:', data);
                             // Optionally, handle the error (e.g., show an alert)
+                            alert('Failed to update order. Please try again.');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         // Optionally, handle the error (e.g., show an alert)
+                        alert('An error occurred while updating the order.');
                     });
                 }
+            });
+
+            // Prevent navigation if dragging occurred
+            grid.querySelectorAll('a').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                    }
+                });
             });
         });
     </script>
