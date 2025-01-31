@@ -11,28 +11,24 @@ class Image extends Model
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array
      */
     protected $fillable = [
         'user_id',
         'file_path',
         'position',
         'caption',
-        'instagram_media_id', // <-- Added for tracking Instagram media
+        'instagram_media_id', // If using Instagram import
     ];
 
     /**
      * The attributes that should be cast to native types.
-     *
-     * @var array
      */
     protected $casts = [
         'position' => 'integer',
     ];
 
     /**
-     * Get the user that owns the image.
+     * Relationship: which user owns this image?
      */
     public function user()
     {
@@ -40,9 +36,7 @@ class Image extends Model
     }
 
     /**
-     * Accessor to get the full URL of the image.
-     *
-     * @return string
+     * Accessor for full URL (optional convenience).
      */
     public function getUrlAttribute()
     {
@@ -50,10 +44,7 @@ class Image extends Model
     }
 
     /**
-     * Scope a query to only include Instagram imported images.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * Scope for only Instagram-imported images (optional).
      */
     public function scopeImportedFromInstagram($query)
     {
