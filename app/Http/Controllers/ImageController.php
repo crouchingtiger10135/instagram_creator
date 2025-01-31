@@ -32,7 +32,7 @@ class ImageController extends Controller
         // Validate the request
         $request->validate([
             'photos'   => 'required|array', // ensures 'photos' is an array
-            'photos.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photos.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:12048',
             'caption'  => 'nullable|string|max:255',
         ]);
 
