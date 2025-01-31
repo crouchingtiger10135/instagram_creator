@@ -1,4 +1,4 @@
-{{-- resources/views/dashboard.blade.php --}}
+<!-- resources/views/dashboard.blade.php -->
 
 <x-app-layout>
     {{-- PAGE HEADER --}}
@@ -7,30 +7,57 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Your Feed') }}
             </h2>
-            {{-- Add Images Button --}}
-            <button 
-                id="add-image-button"
-                aria-label="Add new images"
-                class="inline-flex items-center px-4 py-2 
-                       bg-green-600 border border-transparent 
-                       rounded-md font-semibold text-white 
-                       hover:bg-green-700 focus:outline-none 
-                       focus:ring-2 focus:ring-green-500 
-                       focus:ring-offset-2 transition 
-                       ease-in-out duration-150"
-            >
-                Add Images
-            </button>
+            {{-- Add Images and Import Instagram Buttons --}}
+            <div class="flex space-x-2">
+                <button 
+                    id="add-image-button"
+                    aria-label="Add new images"
+                    class="inline-flex items-center px-4 py-2 
+                           bg-green-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-green-700 focus:outline-none 
+                           focus:ring-2 focus:ring-green-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Add Images
+                </button>
+
+                {{-- Import Instagram Images Button --}}
+                <a 
+                    href="{{ route('dashboard.importInstagram') }}" 
+                    class="inline-flex items-center px-4 py-2 
+                           bg-purple-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-purple-700 focus:outline-none 
+                           focus:ring-2 focus:ring-purple-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Import Last 9 Instagram Images
+                </a>
+            </div>
         </div>
     </x-slot>
 
     {{-- MAIN CONTENT WRAPPER --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            {{-- SUCCESS MESSAGE (e.g., after uploading/deleting/editing) --}}
+            {{-- SUCCESS MESSAGE (e.g., after uploading/importing/editing) --}}
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- ERROR MESSAGE --}}
+            @if ($errors->any())
+                <div class="p-4 rounded bg-red-100 text-red-800">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
