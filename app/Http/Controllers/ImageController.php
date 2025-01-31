@@ -25,47 +25,47 @@ class ImageController extends Controller
     }
 
     /**
-     * Store a newly uploaded image.
+     * Store newly uploaded images (now supports multiple).
      */
     public function store(Request $request)
     {
         // Validate the request
+        // 1) 'photos' is required and should be an array
+        // 2) Each file in 'photos.*' must be an image of specified MIME types and max size
+        // 3) Caption is optional, up to 255 chars
         $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'caption' => 'nullable|string|max:255',
+            'photos'   => 'required',   // If you want to ensure at least one file is uploaded
+            'photos.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'caption'  => 'nullable|string|max:255',
         ]);
 
-        // Handle the uploaded image
-        if ($request->hasFile('photo')) {
-            $image = $request->file('photo');
-            $filename = time() . '.' . $image->getClientOriginalExtension();
+        // Check if 'photos' exist in the request
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                // Generate a unique filename (time + random) to avoid collisions
+                $filename = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
 
-            // Optional: Image Optimization (e.g., resize using Intervention Image)
-            // $resizedImage = \Intervention\Image\Facades\Image::make($image)->resize(1200, null, function ($constraint) {
-            //     $constraint->aspectRatio();
-            //     $constraint->upsize();
-            // })->encode();
-            // Storage::disk('public')->put('images/' . $filename, $resizedImage);
+                // Store each file in "public/images"
+                // (storage path will be "storage/images/[filename]")
+                Storage::disk('public')->put('images/' . $filename, file_get_contents($photo));
 
-            // Directly store the image
-            Storage::disk('public')->put('images/' . $filename, file_get_contents($image));
+                // Position logic: Increment existing positions and place new image in position=1
+                Image::where('user_id', auth()->id())->increment('position');
+                $newPosition = 1;
 
-            // Assign position (new images first)
-            Image::where('user_id', auth()->id())->increment('position');
-            $newPosition = 1;
+                // Create the database record
+                Image::create([
+                    'user_id'   => auth()->id(),
+                    'file_path' => 'images/' . $filename,
+                    'caption'   => $request->input('caption'), // Single caption for all images
+                    'position'  => $newPosition,
+                ]);
+            }
 
-            // Create image record
-            Image::create([
-                'user_id' => auth()->id(),
-                'file_path' => 'images/' . $filename,
-                'caption' => $request->input('caption'),
-                'position' => $newPosition,
-            ]);
-
-            return redirect()->route('dashboard')->with('success', 'Image uploaded successfully!');
+            return redirect()->route('dashboard')->with('success', 'Images uploaded successfully!');
         }
 
-        return back()->withErrors('Please select an image to upload.');
+        return back()->withErrors('Please select at least one image to upload.');
     }
 
     /**
@@ -130,11 +130,11 @@ class ImageController extends Controller
 
                 // Create image record
                 Image::create([
-                    'user_id' => $user->id,
-                    'instagram_media_id' => $item['id'], // Track Instagram media
-                    'file_path' => $imageName,
-                    'caption' => $item['caption'] ?? '',
-                    'position' => $newPosition,
+                    'user_id'           => $user->id,
+                    'instagram_media_id'=> $item['id'], // Track Instagram media
+                    'file_path'         => $imageName,
+                    'caption'           => $item['caption'] ?? '',
+                    'position'          => $newPosition,
                 ]);
             }
 
@@ -206,7 +206,7 @@ class ImageController extends Controller
         // Validate the request
         $request->validate([
             'caption' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photo'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         // Handle the uploaded image if present
@@ -227,7 +227,6 @@ class ImageController extends Controller
 
         // Update the caption
         $image->caption = $request->input('caption');
-
         $image->save();
 
         return redirect()->route('dashboard')->with('success', 'Image updated successfully!');
