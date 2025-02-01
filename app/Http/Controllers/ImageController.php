@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
+// Import Intervention Image facade for cropping
+use Intervention\Image\Facades\Image as InterventionImage;
 
 class ImageController extends Controller
 {
@@ -128,7 +130,7 @@ class ImageController extends Controller
     }
 
     /**
-     * (Optional) Show the form for editing a single image.
+     * Show the form for editing a single image.
      */
     public function edit(Image $image)
     {
@@ -136,30 +138,54 @@ class ImageController extends Controller
     }
 
     /**
-     * (Optional) Update a single image in storage.
+     * Update a single image in storage, with optional cropping.
      */
     public function update(Request $request, Image $image)
     {
-        // $this->authorize('update', $image);
-
+        // Validate the request including cropping fields
         $request->validate([
-            'caption' => 'nullable|string|max:255',
-            'photo'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'caption'     => 'nullable|string|max:255',
+            'new_photo'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'crop_x'      => 'nullable|numeric',
+            'crop_y'      => 'nullable|numeric',
+            'crop_width'  => 'nullable|numeric',
+            'crop_height' => 'nullable|numeric',
         ]);
 
-        // If a new photo is provided, replace the old one
-        if ($request->hasFile('photo')) {
+        // If a new photo is provided, process it with optional cropping
+        if ($request->hasFile('new_photo')) {
+            // Delete the old image file
             Storage::disk('public')->delete($image->file_path);
 
-            $newImage = $request->file('photo');
-            $filename = time() . '.' . $newImage->getClientOriginalExtension();
+            $newPhoto = $request->file('new_photo');
+            $filename = time() . '_' . uniqid() . '.' . $newPhoto->getClientOriginalExtension();
             $newFilePath = 'images/' . $filename;
 
-            Storage::disk('public')->put($newFilePath, file_get_contents($newImage));
+            // Create an Intervention Image instance
+            $img = InterventionImage::make($newPhoto->getPathname());
 
+            // If cropping parameters are provided, apply cropping
+            if (
+                $request->filled('crop_x') &&
+                $request->filled('crop_y') &&
+                $request->filled('crop_width') &&
+                $request->filled('crop_height')
+            ) {
+                $cropX = (int)$request->input('crop_x');
+                $cropY = (int)$request->input('crop_y');
+                $cropWidth = (int)$request->input('crop_width');
+                $cropHeight = (int)$request->input('crop_height');
+                $img->crop($cropWidth, $cropHeight, $cropX, $cropY);
+            }
+
+            // Save the processed image to storage
+            Storage::disk('public')->put($newFilePath, (string) $img->encode());
+
+            // Update the file_path in the database
             $image->file_path = $newFilePath;
         }
 
+        // Update caption if provided
         $image->caption = $request->input('caption');
         $image->save();
 
@@ -167,12 +193,10 @@ class ImageController extends Controller
     }
 
     /**
-     * (Optional) Remove a single image from storage.
+     * Remove a single image from storage.
      */
     public function destroy(Image $image)
     {
-        // $this->authorize('delete', $image);
-
         // Delete the image from storage
         Storage::disk('public')->delete($image->file_path);
 
@@ -183,7 +207,7 @@ class ImageController extends Controller
     }
 
     /**
-     * (Optional) Import the last 9 images from Instagram (if you have this feature).
+     * Import the last 9 images from Instagram (if available).
      */
     public function importInstagramImages()
     {
@@ -220,10 +244,10 @@ class ImageController extends Controller
                                       ->where('user_id', $user->id)
                                       ->first();
                 if ($existingImage) {
-                    continue; // Skip
+                    continue; // Skip if already imported
                 }
 
-                // Download
+                // Download image content
                 $imageContent = file_get_contents($item['media_url']);
                 if ($imageContent === false) {
                     \Log::warning("Failed to download image: {$item['media_url']}");
@@ -234,9 +258,10 @@ class ImageController extends Controller
                 $imageName = 'instagram/' . $item['id'] . '.' . $ext;
                 Storage::disk('public')->put($imageName, $imageContent);
 
-                // Position logic for new images
+                // Increment existing positions for new image
                 Image::where('user_id', $user->id)->increment('position');
 
+                // Create a new image record
                 Image::create([
                     'user_id'           => $user->id,
                     'instagram_media_id'=> $item['id'],
