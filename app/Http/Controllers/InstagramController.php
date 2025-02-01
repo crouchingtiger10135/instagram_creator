@@ -14,9 +14,9 @@ class InstagramController extends Controller
      */
     public function redirectToInstagram()
     {
-        // Only request the 'user_media' scope
+        // Override the default scopes by using setScopes()
         return Socialite::driver('instagram')
-                        ->scopes(['user_media'])
+                        ->setScopes(['user_media'])
                         ->redirect();
     }
 
