@@ -99,13 +99,41 @@ class ImageController extends Controller
     }
 
     /**
+     * Bulk delete selected images.
+     */
+    public function bulkDelete(Request $request)
+    {
+        // Validate the request input
+        $data = $request->validate([
+            'image_ids'   => 'required|array',
+            'image_ids.*' => 'integer|exists:images,id',
+        ]);
+
+        $userId = Auth::id();
+        $images = Image::whereIn('id', $data['image_ids'])
+                        ->where('user_id', $userId)
+                        ->get();
+
+        foreach ($images as $image) {
+            // Delete the image file from storage if it exists
+            if (Storage::disk('public')->exists($image->file_path)) {
+                Storage::disk('public')->delete($image->file_path);
+            }
+            // Delete the image record from the database
+            $image->delete();
+        }
+
+        return redirect()->route('dashboard')
+                         ->with('success', 'Selected images have been deleted successfully.');
+    }
+
+    /**
      * (Optional) Show the form for editing a single image.
      */
-       public function edit(Image $image)
+    public function edit(Image $image)
     {
         return view('edit', compact('image'));
     }
-    
 
     /**
      * (Optional) Update a single image in storage.
