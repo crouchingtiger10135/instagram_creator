@@ -12,10 +12,13 @@ class InstagramController extends Controller
     /**
      * Redirect the user to the Instagram authentication page.
      */
-    public function redirectToInstagram()
+ public function redirectToInstagram()
 {
     return Socialite::driver('instagram')
+                    ->setScopes(['user_profile'])
+                    ->redirect();
 }
+
 
 
 
