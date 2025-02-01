@@ -12,10 +12,10 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        // Example:
-        // 'App\Events\SomeEvent' => [
-        //     'App\Listeners\SomeListener',
-        // ],
+        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
+        // Register Instagram driver
+        'SocialiteProviders\\Instagram\\InstagramExtendSocialite@handle',
+    ],
     ];
 
     /**
