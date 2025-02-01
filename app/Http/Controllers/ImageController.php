@@ -130,6 +130,9 @@ class ImageController extends Controller
 
     /**
      * Update a single image in storage, with optional cropping.
+     *
+     * This method checks if a new photo is uploaded. If so, it uses the new file.
+     * Otherwise, if crop parameters are provided, it crops the current image.
      */
     public function update(Request $request, Image $image)
     {
@@ -143,19 +146,19 @@ class ImageController extends Controller
             'crop_height' => 'nullable|numeric',
         ]);
 
-        // If a new photo is provided, process it
+        // If a new photo is provided, process it with optional cropping.
         if ($request->hasFile('new_photo')) {
-            // Delete the old image file
+            // Delete the old image file.
             Storage::disk('public')->delete($image->file_path);
 
             $newPhoto = $request->file('new_photo');
             $filename = time() . '_' . uniqid() . '.' . $newPhoto->getClientOriginalExtension();
             $newFilePath = 'images/' . $filename;
 
-            // Create an Intervention Image instance from the uploaded file
+            // Create an Intervention Image instance from the uploaded file.
             $img = InterventionImage::make($newPhoto->getPathname());
 
-            // If cropping parameters are provided, apply cropping
+            // If cropping parameters are provided, apply cropping.
             if (
                 $request->filled('crop_x') &&
                 $request->filled('crop_y') &&
@@ -166,18 +169,34 @@ class ImageController extends Controller
                 $cropY = (int) $request->input('crop_y');
                 $cropWidth = (int) $request->input('crop_width');
                 $cropHeight = (int) $request->input('crop_height');
-
                 $img->crop($cropWidth, $cropHeight, $cropX, $cropY);
             }
 
-            // Save the processed image to storage
+            // Save the processed image to storage.
             Storage::disk('public')->put($newFilePath, (string)$img->encode());
 
-            // Update the file_path for the image record
+            // Update the file_path for the image record.
             $image->file_path = $newFilePath;
         }
+        // If no new file is uploaded but crop parameters exist, crop the current image.
+        else if (
+            $request->filled('crop_x') &&
+            $request->filled('crop_y') &&
+            $request->filled('crop_width') &&
+            $request->filled('crop_height')
+        ) {
+            // Load the existing image from storage.
+            $img = InterventionImage::make(storage_path('app/public/' . $image->file_path));
+            $cropX = (int) $request->input('crop_x');
+            $cropY = (int) $request->input('crop_y');
+            $cropWidth = (int) $request->input('crop_width');
+            $cropHeight = (int) $request->input('crop_height');
+            $img->crop($cropWidth, $cropHeight, $cropX, $cropY);
+            // Overwrite the existing image.
+            Storage::disk('public')->put($image->file_path, (string)$img->encode());
+        }
 
-        // Update caption if provided
+        // Update caption if provided.
         $image->caption = $request->input('caption');
         $image->save();
 
@@ -221,12 +240,12 @@ class ImageController extends Controller
         DB::beginTransaction();
         try {
             foreach ($media as $item) {
-                // Process only IMAGE media types
+                // Process only IMAGE media types.
                 if ($item['media_type'] !== 'IMAGE') {
                     continue;
                 }
 
-                // Check if image has already been imported
+                // Check if image has already been imported.
                 $existingImage = Image::where('instagram_media_id', $item['id'])
                     ->where('user_id', $user->id)
                     ->first();
@@ -234,7 +253,7 @@ class ImageController extends Controller
                     continue;
                 }
 
-                // Download image content
+                // Download image content.
                 $imageContent = file_get_contents($item['media_url']);
                 if ($imageContent === false) {
                     \Log::warning("Failed to download image: {$item['media_url']}");
@@ -245,10 +264,10 @@ class ImageController extends Controller
                 $imageName = 'instagram/' . $item['id'] . '.' . $ext;
                 Storage::disk('public')->put($imageName, $imageContent);
 
-                // Increment positions for new image
+                // Increment positions for new image.
                 Image::where('user_id', $user->id)->increment('position');
 
-                // Create the image record
+                // Create the image record.
                 Image::create([
                     'user_id'           => $user->id,
                     'instagram_media_id'=> $item['id'],
