@@ -33,33 +33,59 @@
                 </div>
             @endif
 
-            {{-- IMAGE GRID --}}
+            {{-- IMAGE GRID WITH BULK DELETE FORM --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 @if ($images->count() === 0)
                     <p class="text-gray-500 px-6">No images yet.</p>
                 @else
-                    <!-- 3-column, gap-0, full-width grid -->
-                    <div 
-                        id="image-grid"
-                        class="grid grid-cols-3 gap-0 w-full mx-auto"
-                    >
-                        @foreach($images as $image)
-                            <div class="relative" data-id="{{ $image->id }}">
-                                <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
-                                <a 
-                                    href="{{ route('dashboard.images.edit', $image->id) }}" 
-                                    class="block"
-                                >
-                                    <img 
-                                        src="{{ asset('storage/'.$image->file_path) }}" 
-                                        alt="{{ $image->caption ?? 'User image' }}"
-                                        class="w-full aspect-[4/5] object-cover"
-                                        loading="lazy"
+                    <form action="{{ route('dashboard.images.bulk-delete') }}" method="POST">
+                        @csrf
+                        {{-- 3-column, gap-0, full-width grid --}}
+                        <div 
+                            id="image-grid"
+                            class="grid grid-cols-3 gap-0 w-full mx-auto"
+                        >
+                            @foreach($images as $image)
+                                <div class="relative" data-id="{{ $image->id }}">
+                                    {{-- Bulk Delete Checkbox --}}
+                                    <input 
+                                        type="checkbox" 
+                                        name="image_ids[]" 
+                                        value="{{ $image->id }}"
+                                        class="absolute top-2 left-2 z-10 w-5 h-5"
                                     >
-                                </a>
-                            </div>
-                        @endforeach
-                    </div>
+                                    <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
+                                    <a 
+                                        href="{{ route('dashboard.images.edit', $image->id) }}" 
+                                        class="block"
+                                    >
+                                        <img 
+                                            src="{{ asset('storage/'.$image->file_path) }}" 
+                                            alt="{{ $image->caption ?? 'User image' }}"
+                                            class="w-full aspect-[4/5] object-cover"
+                                            loading="lazy"
+                                        >
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Bulk Delete Button --}}
+                        <div class="mt-4 text-right px-6">
+                            <button 
+                                type="submit"
+                                class="inline-flex items-center px-4 py-2 
+                                       bg-red-600 border border-transparent 
+                                       rounded-md font-semibold text-white 
+                                       hover:bg-red-700 focus:outline-none 
+                                       focus:ring-2 focus:ring-red-500 
+                                       focus:ring-offset-2 transition 
+                                       ease-in-out duration-150"
+                            >
+                                Delete Selected
+                            </button>
+                        </div>
+                    </form>
                 @endif
             </div>
         </div>
