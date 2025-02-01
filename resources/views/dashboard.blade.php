@@ -6,36 +6,20 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Your Feed') }}
             </h2>
-            <div class="flex space-x-2">
-                {{-- Toggle Selection Mode Button --}}
-                <button 
-                    id="toggle-selection-mode"
-                    aria-label="Toggle selection mode"
-                    class="inline-flex items-center px-4 py-2 
-                           bg-yellow-600 border border-transparent 
-                           rounded-md font-semibold text-white 
-                           hover:bg-yellow-700 focus:outline-none 
-                           focus:ring-2 focus:ring-yellow-500 
-                           focus:ring-offset-2 transition 
-                           ease-in-out duration-150"
-                >
-                    Select Images
-                </button>
-                {{-- Add Images Button --}}
-                <button 
-                    id="add-image-button"
-                    aria-label="Add new images"
-                    class="inline-flex items-center px-4 py-2 
-                           bg-green-600 border border-transparent 
-                           rounded-md font-semibold text-white 
-                           hover:bg-green-700 focus:outline-none 
-                           focus:ring-2 focus:ring-green-500 
-                           focus:ring-offset-2 transition 
-                           ease-in-out duration-150"
-                >
-                    Add Images
-                </button>
-            </div>
+            {{-- Only the Add Images button remains in the header --}}
+            <button 
+                id="add-image-button"
+                aria-label="Add new images"
+                class="inline-flex items-center px-4 py-2 
+                       bg-green-600 border border-transparent 
+                       rounded-md font-semibold text-white 
+                       hover:bg-green-700 focus:outline-none 
+                       focus:ring-2 focus:ring-green-500 
+                       focus:ring-offset-2 transition 
+                       ease-in-out duration-150"
+            >
+                Add Images
+            </button>
         </div>
     </x-slot>
 
@@ -49,6 +33,25 @@
                 </div>
             @endif
 
+            {{-- Image Selection Toggle Button (placed above the grid) --}}
+            @if($images->count() > 0)
+                <div class="px-6">
+                    <button 
+                        id="toggle-selection-mode"
+                        aria-label="Toggle selection mode"
+                        class="inline-flex items-center px-4 py-2 
+                               bg-yellow-600 border border-transparent 
+                               rounded-md font-semibold text-white 
+                               hover:bg-yellow-700 focus:outline-none 
+                               focus:ring-2 focus:ring-yellow-500 
+                               focus:ring-offset-2 transition 
+                               ease-in-out duration-150"
+                    >
+                        Select Images
+                    </button>
+                </div>
+            @endif
+
             {{-- IMAGE GRID WITH BULK DELETE FORM --}}
             <div class="bg-white overflow-hidden shadow rounded-lg p-0">
                 @if ($images->count() === 0)
@@ -56,10 +59,10 @@
                 @else
                     <form action="{{ route('dashboard.images.bulk-delete') }}" method="POST">
                         @csrf
-                        {{-- 3-column, gap-0, full-width grid --}}
+                        {{-- Responsive grid: 2 columns on small screens, 3 on medium and up --}}
                         <div 
                             id="image-grid"
-                            class="grid grid-cols-3 gap-0 w-full mx-auto relative"
+                            class="grid grid-cols-2 md:grid-cols-3 gap-0 w-full mx-auto relative"
                         >
                             @foreach($images as $image)
                                 <div class="relative" data-id="{{ $image->id }}">
@@ -70,7 +73,7 @@
                                         value="{{ $image->id }}"
                                         class="bulk-checkbox absolute top-2 left-2 z-10 w-5 h-5 hidden"
                                     >
-                                    <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
+                                    <!-- Click image to edit -->
                                     <a 
                                         href="{{ route('dashboard.images.edit', $image->id) }}" 
                                         class="block"
@@ -157,7 +160,7 @@
                     @enderror
                 </div>
 
-                {{-- Optional Caption Input (applies to all images) --}}
+                {{-- Optional Caption Input --}}
                 <div class="mb-4">
                     <label for="caption" class="block font-medium">Caption (Optional)</label>
                     <input 
@@ -205,8 +208,8 @@
             const toggleSelectionModeButton = document.getElementById('toggle-selection-mode');
             const bulkDeleteContainer = document.getElementById('bulk-delete-container');
             const checkboxes = document.querySelectorAll('.bulk-checkbox');
-            let isDragging = false; // Flag to track dragging state
-            let selectionMode = false; // Flag to track selection mode
+            let isDragging = false; // Track dragging state
+            let selectionMode = false; // Track selection mode
 
             // Open modal
             addButton.addEventListener('click', () => {
@@ -236,7 +239,7 @@
                 }
             });
 
-            // Toggle selection mode for checkboxes
+            // Toggle selection mode
             toggleSelectionModeButton.addEventListener('click', () => {
                 selectionMode = !selectionMode;
                 if (selectionMode) {
@@ -245,7 +248,7 @@
                     bulkDeleteContainer.classList.remove('hidden');
                     toggleSelectionModeButton.textContent = 'Cancel Selection';
                 } else {
-                    // Hide checkboxes and bulk delete button, and uncheck any selected boxes
+                    // Hide checkboxes and bulk delete button, uncheck boxes
                     checkboxes.forEach(cb => {
                         cb.classList.add('hidden');
                         cb.checked = false;
@@ -255,7 +258,7 @@
                 }
             });
 
-            // Initialize SortableJS on the grid (if it exists)
+            // Initialize SortableJS on the grid
             if (grid) {
                 new Sortable(grid, {
                     animation: 150,
@@ -271,7 +274,7 @@
                         isDragging = false;
                         grid.classList.remove('dragging');
 
-                        // Build a list of IDs in the new order
+                        // Build list of IDs in new order
                         let orderedIds = [];
                         grid.querySelectorAll('[data-id]').forEach((item) => {
                             orderedIds.push(item.getAttribute('data-id'));
