@@ -70,7 +70,7 @@
                     </div>
 
                     {{-- Cropping Container (hidden by default) --}}
-                    <div id="crop-container" class="mb-4">
+                    <div id="crop-container" class="mb-4 hidden">
                         <p class="mb-2 font-medium">Crop Your Image</p>
                         <div class="w-full">
                             <img id="cropper-image" src="" alt="Crop Preview" class="w-full object-contain">
@@ -186,7 +186,7 @@
                         document.getElementById('crop_y').value = cropData.y;
                         document.getElementById('crop_width').value = cropData.width;
                         document.getElementById('crop_height').value = cropData.height;
-                        // Optionally, you could destroy the cropper and hide the container.
+                        // Optionally, destroy the cropper and hide the container after applying crop.
                         cropper.destroy();
                         cropper = null;
                         cropContainer.classList.add('hidden');
