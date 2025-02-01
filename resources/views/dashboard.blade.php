@@ -53,7 +53,7 @@
                                     <img 
                                         src="{{ asset('storage/'.$image->file_path) }}" 
                                         alt="{{ $image->caption ?? 'User image' }}"
-                                        class="w-full aspect-square object-cover"
+                                        class="w-full aspect-[4/5] object-cover"
                                         loading="lazy"
                                     >
                                 </a>
