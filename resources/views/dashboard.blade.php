@@ -276,23 +276,3 @@
         });
     </script>
 </x-app-layout>
-                         })
-                             .catch(error => {
-                                  console.error('Error:', error);
-                                  alert('An error occurred while updating the order.');
-                             });
-                        }
-                   });
-
-                   // Prevent navigation when dragging
-                   grid.querySelectorAll('a').forEach(function(anchor) {
-                        anchor.addEventListener('click', function(e) {
-                             if (isDragging) {
-                                  e.preventDefault();
-                             }
-                        });
-                   });
-              }
-         });
-    </script>
-</x-app-layout>
