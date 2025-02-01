@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\InstagramController;
 
+
 // Redirect to login if user visits the root
 Route::get('/', function () {
     return redirect()->route('login');
@@ -42,6 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::post('/dashboard/images/bulk-delete', [ImageController::class, 'bulkDelete'])
+    ->name('dashboard.images.bulk-delete');
+    
     // Instagram
     Route::middleware(['auth'])->group(function () {
         Route::get('/instagram/auth', [InstagramController::class, 'redirectToInstagram'])->name('instagram.auth');
