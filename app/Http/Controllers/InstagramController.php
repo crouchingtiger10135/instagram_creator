@@ -13,12 +13,13 @@ class InstagramController extends Controller
      * Redirect the user to the Instagram authentication page.
      */
     public function redirectToInstagram()
-    {
-        // Override the default scopes by using setScopes()
-        return Socialite::driver('instagram')
-                        ->setScopes(['user_media'])
-                        ->redirect();
-    }
+{
+    return Socialite::driver('instagram')
+                    ->setScopes(['user_profile', 'user_media'])
+                    ->redirect();
+}
+
+
 
     /**
      * Handle the callback from Instagram.
