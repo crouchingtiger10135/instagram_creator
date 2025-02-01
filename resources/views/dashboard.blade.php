@@ -6,20 +6,36 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Your Feed') }}
             </h2>
-            {{-- Add Images Button --}}
-            <button 
-                id="add-image-button"
-                aria-label="Add new images"
-                class="inline-flex items-center px-4 py-2 
-                       bg-green-600 border border-transparent 
-                       rounded-md font-semibold text-white 
-                       hover:bg-green-700 focus:outline-none 
-                       focus:ring-2 focus:ring-green-500 
-                       focus:ring-offset-2 transition 
-                       ease-in-out duration-150"
-            >
-                Add Images
-            </button>
+            <div class="flex space-x-2">
+                {{-- Toggle Selection Mode Button --}}
+                <button 
+                    id="toggle-selection-mode"
+                    aria-label="Toggle selection mode"
+                    class="inline-flex items-center px-4 py-2 
+                           bg-yellow-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-yellow-700 focus:outline-none 
+                           focus:ring-2 focus:ring-yellow-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Select Images
+                </button>
+                {{-- Add Images Button --}}
+                <button 
+                    id="add-image-button"
+                    aria-label="Add new images"
+                    class="inline-flex items-center px-4 py-2 
+                           bg-green-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-green-700 focus:outline-none 
+                           focus:ring-2 focus:ring-green-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Add Images
+                </button>
+            </div>
         </div>
     </x-slot>
 
@@ -43,16 +59,16 @@
                         {{-- 3-column, gap-0, full-width grid --}}
                         <div 
                             id="image-grid"
-                            class="grid grid-cols-3 gap-0 w-full mx-auto"
+                            class="grid grid-cols-3 gap-0 w-full mx-auto relative"
                         >
                             @foreach($images as $image)
                                 <div class="relative" data-id="{{ $image->id }}">
-                                    {{-- Bulk Delete Checkbox --}}
+                                    {{-- Bulk Delete Checkbox (hidden by default) --}}
                                     <input 
                                         type="checkbox" 
                                         name="image_ids[]" 
                                         value="{{ $image->id }}"
-                                        class="absolute top-2 left-2 z-10 w-5 h-5"
+                                        class="bulk-checkbox absolute top-2 left-2 z-10 w-5 h-5 hidden"
                                     >
                                     <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
                                     <a 
@@ -70,8 +86,8 @@
                             @endforeach
                         </div>
 
-                        {{-- Bulk Delete Button --}}
-                        <div class="mt-4 text-right px-6">
+                        {{-- Bulk Delete Button (hidden by default) --}}
+                        <div id="bulk-delete-container" class="mt-4 text-right px-6 hidden">
                             <button 
                                 type="submit"
                                 class="inline-flex items-center px-4 py-2 
@@ -186,7 +202,11 @@
             const addButton = document.getElementById('add-image-button');
             const modal = document.getElementById('add-image-modal');
             const closeModal = document.getElementById('close-modal');
+            const toggleSelectionModeButton = document.getElementById('toggle-selection-mode');
+            const bulkDeleteContainer = document.getElementById('bulk-delete-container');
+            const checkboxes = document.querySelectorAll('.bulk-checkbox');
             let isDragging = false; // Flag to track dragging state
+            let selectionMode = false; // Flag to track selection mode
 
             // Open modal
             addButton.addEventListener('click', () => {
@@ -213,6 +233,25 @@
                 if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
                     addButton.focus();
+                }
+            });
+
+            // Toggle selection mode for checkboxes
+            toggleSelectionModeButton.addEventListener('click', () => {
+                selectionMode = !selectionMode;
+                if (selectionMode) {
+                    // Show checkboxes and bulk delete button
+                    checkboxes.forEach(cb => cb.classList.remove('hidden'));
+                    bulkDeleteContainer.classList.remove('hidden');
+                    toggleSelectionModeButton.textContent = 'Cancel Selection';
+                } else {
+                    // Hide checkboxes and bulk delete button, and uncheck any selected boxes
+                    checkboxes.forEach(cb => {
+                        cb.classList.add('hidden');
+                        cb.checked = false;
+                    });
+                    bulkDeleteContainer.classList.add('hidden');
+                    toggleSelectionModeButton.textContent = 'Select Images';
                 }
             });
 
