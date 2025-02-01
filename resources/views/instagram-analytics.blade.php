@@ -69,8 +69,10 @@
         </div>
     </div>
 
-    <!-- Chart.js via CDN -->
+    <!-- Include Chart.js and the date adapter -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    
     <script>
         // Impressions Chart Setup
         const impressionsCtx = document.getElementById('impressionsChart').getContext('2d');
@@ -81,7 +83,7 @@
                 datasets: [{
                     label: 'Impressions',
                     data: {!! json_encode($impressionsData) !!},
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)', // Tailwind blue-600 (20% opacity)
+                    backgroundColor: 'rgba(37, 99, 235, 0.2)', // Tailwind blue-600 at 20%
                     borderColor: 'rgba(37, 99, 235, 1)',
                     borderWidth: 2,
                     fill: true,
@@ -96,7 +98,7 @@
                         type: 'time',
                         time: {
                             unit: 'day',
-                            tooltipFormat: 'MMM DD, YYYY'
+                            tooltipFormat: 'MMM dd, yyyy'
                         },
                         title: {
                             display: true,
@@ -123,7 +125,7 @@
                 datasets: [{
                     label: 'Reach',
                     data: {!! json_encode($reachData) !!},
-                    backgroundColor: 'rgba(16, 185, 129, 0.2)', // Tailwind green-500 (20% opacity)
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)', // Tailwind green-500 at 20%
                     borderColor: 'rgba(16, 185, 129, 1)',
                     borderWidth: 2,
                     fill: true,
@@ -138,7 +140,7 @@
                         type: 'time',
                         time: {
                             unit: 'day',
-                            tooltipFormat: 'MMM DD, YYYY'
+                            tooltipFormat: 'MMM dd, yyyy'
                         },
                         title: {
                             display: true,
