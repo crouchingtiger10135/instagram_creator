@@ -1,25 +1,62 @@
 {{-- resources/views/dashboard-test.blade.php --}}
+
 <x-app-layout>
     {{-- PAGE HEADER --}}
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-4 sm:mb-0">
                 {{ __('Test Your Feed') }}
             </h2>
-            {{-- Add Images Button --}}
-            <button 
-                id="add-image-button"
-                aria-label="Add new images"
-                class="inline-flex items-center px-4 py-2 
-                       bg-green-600 border border-transparent 
-                       rounded-md font-semibold text-white 
-                       hover:bg-green-700 focus:outline-none 
-                       focus:ring-2 focus:ring-green-500 
-                       focus:ring-offset-2 transition 
-                       ease-in-out duration-150"
-            >
-                Add Images
-            </button>
+
+            {{-- BUTTONS WRAPPER --}}
+            <div class="flex items-center space-x-4">
+                {{-- ADD IMAGES BUTTON --}}
+                <button 
+                    id="add-image-button"
+                    aria-label="Add new images"
+                    class="inline-flex items-center px-4 py-2 
+                           bg-green-600 border border-transparent 
+                           rounded-md font-semibold text-white 
+                           hover:bg-green-700 focus:outline-none 
+                           focus:ring-2 focus:ring-green-500 
+                           focus:ring-offset-2 transition 
+                           ease-in-out duration-150"
+                >
+                    Add Images
+                </button>
+
+                {{-- INSTAGRAM CONNECT / IMPORT BUTTONS --}}
+
+                {{-- If the user is NOT connected to Instagram yet, show "Connect to Instagram" --}}
+                @if(!auth()->user()->instagram_access_token)
+                    <a 
+                        href="{{ route('instagram.auth') }}" 
+                        class="inline-flex items-center px-4 py-2 
+                               bg-blue-600 border border-transparent 
+                               rounded-md font-semibold text-white 
+                               hover:bg-blue-700 focus:outline-none 
+                               focus:ring-2 focus:ring-blue-500 
+                               focus:ring-offset-2 transition 
+                               ease-in-out duration-150"
+                    >
+                        Connect to Instagram
+                    </a>
+                @else
+                    {{-- If the user IS connected, show "Import from Instagram" --}}
+                    <a 
+                        href="{{ route('dashboard.importInstagram') }}" 
+                        class="inline-flex items-center px-4 py-2 
+                               bg-purple-600 border border-transparent 
+                               rounded-md font-semibold text-white 
+                               hover:bg-purple-700 focus:outline-none 
+                               focus:ring-2 focus:ring-purple-500 
+                               focus:ring-offset-2 transition 
+                               ease-in-out duration-150"
+                    >
+                        Import from Instagram
+                    </a>
+                @endif
+            </div>
         </div>
     </x-slot>
 
@@ -30,6 +67,17 @@
             @if (session('success'))
                 <div class="p-4 rounded bg-green-100 text-green-800">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- ERROR MESSAGE (if you ever flash errors) --}}
+            @if ($errors->any())
+                <div class="p-4 rounded bg-red-100 text-red-800">
+                    <ul>
+                        @foreach($errors->all() as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
@@ -45,7 +93,7 @@
                     >
                         @foreach($images as $image)
                             <div class="relative" data-id="{{ $image->id }}">
-                                <!-- Click image to edit (goes to resources/views/edit.blade.php) -->
+                                <!-- Clicking image -> edit view -->
                                 <a 
                                     href="{{ route('dashboard.images.edit', $image->id) }}" 
                                     class="block"
@@ -87,7 +135,7 @@
 
             {{-- Upload Form --}}
             <form 
-                action="{{ route('dashboard.store') }}" 
+                action="{{ route('dashboard.store') }}"
                 method="POST" 
                 enctype="multipart/form-data"
             >
