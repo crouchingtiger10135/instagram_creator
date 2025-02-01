@@ -14,7 +14,10 @@ class InstagramController extends Controller
      */
     public function redirectToInstagram()
     {
-        return Socialite::driver('instagram') ->redirect();
+        // Only request the 'user_media' scope
+        return Socialite::driver('instagram')
+                        ->scopes(['user_media'])
+                        ->redirect();
     }
 
     /**
