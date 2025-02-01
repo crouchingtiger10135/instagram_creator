@@ -70,7 +70,7 @@
                     </div>
 
                     {{-- Cropping Container (hidden by default) --}}
-                    <div id="crop-container" class="mb-4 hidden">
+                    <div id="crop-container" class="mb-4">
                         <p class="mb-2 font-medium">Crop Your Image</p>
                         <div class="w-full">
                             <img id="cropper-image" src="" alt="Crop Preview" class="w-full object-contain">
