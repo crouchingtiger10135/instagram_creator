@@ -18,7 +18,6 @@ class ImageController extends Controller
      */
     public function index()
     {
-        // Fetch images for the authenticated user, ordered by position ascending
         $images = Image::where('user_id', Auth::id())
             ->orderBy('position', 'asc')
             ->get();
@@ -31,28 +30,20 @@ class ImageController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate the request
         $request->validate([
-            'photos'   => 'required|array', // ensures 'photos' is an array
+            'photos'   => 'required|array',
             'photos.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:12048',
             'caption'  => 'nullable|string|max:255',
         ]);
 
-        // If no photos are provided, return with error
         if (!$request->hasFile('photos')) {
             return back()->withErrors('Please select at least one image to upload.');
         }
 
-        // Loop through each file
         foreach ($request->file('photos') as $photo) {
             $filename = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
-            // Store the image in storage/app/public/images/
             Storage::disk('public')->put('images/' . $filename, file_get_contents($photo));
-
-            // Increment positions for the current user's images
             Image::where('user_id', Auth::id())->increment('position');
-
-            // Create the image record at position 1
             Image::create([
                 'user_id'   => Auth::id(),
                 'file_path' => 'images/' . $filename,
@@ -70,17 +61,14 @@ class ImageController extends Controller
     public function reorder(Request $request)
     {
         $orderedIds = $request->input('orderedIds');
-
         if (!is_array($orderedIds)) {
             return response()->json(['status' => 'error', 'message' => 'Invalid data format.'], 400);
         }
-
         $userId = Auth::id();
 
         DB::beginTransaction();
         try {
             foreach ($orderedIds as $index => $imageId) {
-                // Update position only for images owned by the authenticated user
                 Image::where('id', $imageId)
                     ->where('user_id', $userId)
                     ->update(['position' => $index + 1]);
@@ -103,7 +91,6 @@ class ImageController extends Controller
             'image_ids'   => 'required|array',
             'image_ids.*' => 'integer|exists:images,id',
         ]);
-
         $userId = Auth::id();
         $images = Image::whereIn('id', $data['image_ids'])
             ->where('user_id', $userId)
@@ -131,12 +118,11 @@ class ImageController extends Controller
     /**
      * Update a single image in storage, with optional cropping.
      *
-     * This method checks if a new photo is uploaded. If so, it uses the new file.
-     * Otherwise, if crop parameters are provided, it crops the current image.
+     * - If a new photo is uploaded, it is processed (and cropped if parameters are provided).
+     * - If no new file is uploaded but crop parameters exist, the current image is cropped.
      */
     public function update(Request $request, Image $image)
     {
-        // Validate the request including cropping parameters
         $request->validate([
             'caption'     => 'nullable|string|max:255',
             'new_photo'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -146,19 +132,14 @@ class ImageController extends Controller
             'crop_height' => 'nullable|numeric',
         ]);
 
-        // If a new photo is provided, process it with optional cropping.
         if ($request->hasFile('new_photo')) {
-            // Delete the old image file.
+            // New image provided: delete old image, process new image.
             Storage::disk('public')->delete($image->file_path);
-
             $newPhoto = $request->file('new_photo');
             $filename = time() . '_' . uniqid() . '.' . $newPhoto->getClientOriginalExtension();
             $newFilePath = 'images/' . $filename;
-
-            // Create an Intervention Image instance from the uploaded file.
             $img = InterventionImage::make($newPhoto->getPathname());
 
-            // If cropping parameters are provided, apply cropping.
             if (
                 $request->filled('crop_x') &&
                 $request->filled('crop_y') &&
@@ -171,32 +152,24 @@ class ImageController extends Controller
                 $cropHeight = (int) $request->input('crop_height');
                 $img->crop($cropWidth, $cropHeight, $cropX, $cropY);
             }
-
-            // Save the processed image to storage.
             Storage::disk('public')->put($newFilePath, (string)$img->encode());
-
-            // Update the file_path for the image record.
             $image->file_path = $newFilePath;
-        }
-        // If no new file is uploaded but crop parameters exist, crop the current image.
-        else if (
+        } else if (
             $request->filled('crop_x') &&
             $request->filled('crop_y') &&
             $request->filled('crop_width') &&
             $request->filled('crop_height')
         ) {
-            // Load the existing image from storage.
+            // No new file but crop parameters exist: crop the current image.
             $img = InterventionImage::make(storage_path('app/public/' . $image->file_path));
             $cropX = (int) $request->input('crop_x');
             $cropY = (int) $request->input('crop_y');
             $cropWidth = (int) $request->input('crop_width');
             $cropHeight = (int) $request->input('crop_height');
             $img->crop($cropWidth, $cropHeight, $cropX, $cropY);
-            // Overwrite the existing image.
             Storage::disk('public')->put($image->file_path, (string)$img->encode());
         }
 
-        // Update caption if provided.
         $image->caption = $request->input('caption');
         $image->save();
 
@@ -220,7 +193,6 @@ class ImageController extends Controller
     public function importInstagramImages()
     {
         $user = Auth::user();
-
         if (!$user->instagram_access_token) {
             return redirect()->route('instagram.auth')->withErrors('Please connect your Instagram account first.');
         }
@@ -240,34 +212,24 @@ class ImageController extends Controller
         DB::beginTransaction();
         try {
             foreach ($media as $item) {
-                // Process only IMAGE media types.
                 if ($item['media_type'] !== 'IMAGE') {
                     continue;
                 }
-
-                // Check if image has already been imported.
                 $existingImage = Image::where('instagram_media_id', $item['id'])
                     ->where('user_id', $user->id)
                     ->first();
                 if ($existingImage) {
                     continue;
                 }
-
-                // Download image content.
                 $imageContent = file_get_contents($item['media_url']);
                 if ($imageContent === false) {
                     \Log::warning("Failed to download image: {$item['media_url']}");
                     continue;
                 }
-
                 $ext = pathinfo($item['media_url'], PATHINFO_EXTENSION);
                 $imageName = 'instagram/' . $item['id'] . '.' . $ext;
                 Storage::disk('public')->put($imageName, $imageContent);
-
-                // Increment positions for new image.
                 Image::where('user_id', $user->id)->increment('position');
-
-                // Create the image record.
                 Image::create([
                     'user_id'           => $user->id,
                     'instagram_media_id'=> $item['id'],
