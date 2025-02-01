@@ -19,9 +19,6 @@ class InstagramController extends Controller
                     ->redirect();
 }
 
-
-
-
     /**
      * Handle the callback from Instagram.
      */
