@@ -127,5 +127,3 @@ return [
         \SocialiteProviders\Manager\ServiceProvider::class,
     ],
 ];
-
-];
