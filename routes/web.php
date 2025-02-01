@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\InstagramController;
+use App\Http\Controllers\InstagramAnalyticsController;
 
 
 // Redirect to login if user visits the root
@@ -45,6 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/dashboard/images/bulk-delete', [ImageController::class, 'bulkDelete'])
     ->name('dashboard.images.bulk-delete');
+
+Route::get('/instagram-analytics', [InstagramAnalyticsController::class, 'index'])
+    ->name('instagram.analytics');
+
     
     // Instagram
     Route::middleware(['auth'])->group(function () {
