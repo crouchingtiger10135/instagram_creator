@@ -13,7 +13,6 @@
 
     <div class="py-12">
         <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-            
             {{-- Display error messages if any --}}
             @if ($errors->any())
                 <div class="p-4 mb-4 rounded bg-red-100 text-red-800">
@@ -73,7 +72,7 @@
                     <div id="crop-container" class="mb-4 hidden">
                         <p class="mb-2 font-medium">Adjust Crop</p>
                         <div class="w-full">
-                            <!-- Use the current image for cropping -->
+                            <!-- Using the current image for cropping -->
                             <img id="cropper-image" src="{{ Storage::url($image->file_path) }}" alt="Crop Preview" class="w-full object-contain">
                         </div>
                         <button 
@@ -143,6 +142,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" integrity="sha512-Ht5eT0DYkaehugpYlYt7pVREIoyNwrA9np8hVwP5HbWSorC/bCq0gI4hHNeTkGugJ2X3Ek4RhPN+1P6/65HS4Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                console.log("DOM fully loaded and parsed.");
                 const cropCurrentBtn = document.getElementById('crop-current-btn');
                 const cropContainer = document.getElementById('crop-container');
                 const cropperImage = document.getElementById('cropper-image');
@@ -154,11 +154,14 @@
                     console.log('Crop Current Image button clicked.');
                     // Show the crop container if hidden.
                     cropContainer.classList.remove('hidden');
+
                     // Destroy any existing cropper instance.
                     if (cropper) {
                         cropper.destroy();
+                        cropper = null;
                     }
-                    // Wait for the image to load before initializing Cropper.
+                    
+                    // Wait until the image is fully loaded before initializing Cropper.js.
                     if (cropperImage.complete) {
                         initializeCropper();
                     } else {
@@ -183,7 +186,7 @@
                         document.getElementById('crop_y').value = cropData.y;
                         document.getElementById('crop_width').value = cropData.width;
                         document.getElementById('crop_height').value = cropData.height;
-                        // Destroy the cropper instance and hide the crop container.
+                        // Destroy the cropper and hide the crop container.
                         cropper.destroy();
                         cropper = null;
                         cropContainer.classList.add('hidden');
