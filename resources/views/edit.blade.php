@@ -158,12 +158,21 @@
                     if (cropper) {
                         cropper.destroy();
                     }
+                    // Wait for the image to load before initializing Cropper.
+                    if (cropperImage.complete) {
+                        initializeCropper();
+                    } else {
+                        cropperImage.onload = initializeCropper;
+                    }
+                });
+
+                function initializeCropper() {
                     console.log('Initializing Cropper on image with src:', cropperImage.src);
                     cropper = new Cropper(cropperImage, {
                         aspectRatio: 4 / 5,
                         viewMode: 1,
                     });
-                });
+                }
 
                 // When "Apply Crop" is clicked, capture crop data and store it in hidden inputs.
                 applyCropButton.addEventListener('click', function() {
@@ -174,7 +183,7 @@
                         document.getElementById('crop_y').value = cropData.y;
                         document.getElementById('crop_width').value = cropData.width;
                         document.getElementById('crop_height').value = cropData.height;
-                        // Destroy the cropper and hide the crop container.
+                        // Destroy the cropper instance and hide the crop container.
                         cropper.destroy();
                         cropper = null;
                         cropContainer.classList.add('hidden');
