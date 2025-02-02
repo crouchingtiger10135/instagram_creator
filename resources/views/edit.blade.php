@@ -158,7 +158,6 @@
                     if (cropper) {
                         cropper.destroy();
                     }
-                    // Initialize Cropper.js with a 4:5 aspect ratio.
                     console.log('Initializing Cropper on image with src:', cropperImage.src);
                     cropper = new Cropper(cropperImage, {
                         aspectRatio: 4 / 5,
@@ -166,7 +165,7 @@
                     });
                 });
 
-                // When "Apply Crop" is clicked, get crop data and store it in hidden inputs.
+                // When "Apply Crop" is clicked, capture crop data and store it in hidden inputs.
                 applyCropButton.addEventListener('click', function() {
                     if (cropper) {
                         const cropData = cropper.getData(true);
