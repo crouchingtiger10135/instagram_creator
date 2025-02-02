@@ -15,6 +15,7 @@ class ImageController extends Controller
 {
     /**
      * Display the dashboard with images.
+    
      */
     public function index()
     {
